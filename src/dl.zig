@@ -51,6 +51,36 @@ pub const Circuit = struct {
         return .{ .id = idx };
     }
 
+    pub fn xor_gate(self: *Circuit, alloc: std.mem.Allocator, a: GateId, b: GateId) !GateId {
+        const gate = Gate{ .xor_gate = .{ .left = a, .right = b } };
+        const idx = self.gates.items.len;
+
+        try self.gates.append(alloc, gate);
+        try self.inputs.append(alloc, idx);
+
+        return .{ .id = idx };
+    }
+
+    pub fn nor_gate(self: *Circuit, alloc: std.mem.Allocator, a: GateId, b: GateId) !GateId {
+        const gate = Gate{ .nor_gate = .{ .left = a, .right = b } };
+        const idx = self.gates.items.len;
+
+        try self.gates.append(alloc, gate);
+        try self.inputs.append(alloc, idx);
+
+        return .{ .id = idx };
+    }
+
+    pub fn nand_gate(self: *Circuit, alloc: std.mem.Allocator, a: GateId, b: GateId) !GateId {
+        const gate = Gate{ .nand_gate = .{ .left = a, .right = b } };
+        const idx = self.gates.items.len;
+
+        try self.gates.append(alloc, gate);
+        try self.inputs.append(alloc, idx);
+
+        return .{ .id = idx };
+    }
+
     pub fn not_gate(self: *Circuit, alloc: std.mem.Allocator, a: GateId) !GateId {
         const gate = Gate{ .not_gate = .{ .val = a } };
         const idx = self.gates.items.len;
@@ -68,8 +98,14 @@ pub const Circuit = struct {
     pub fn eval(self: *Circuit, target: GateId) bool {
         return switch (self.gates.items[target.id]) {
             .input => |b| return b,
+
             .and_gate => |a| return self.eval(a.left) and self.eval(a.right),
             .or_gate => |o| return self.eval(o.left) or self.eval(o.right),
+            .xor_gate => |x| return self.eval(x.left) ^ self.eval(x.right),
+
+            .nor_gate => |no| return !(self.eval(no.left) or self.eval(no.right)),
+            .nand_gate => |na| return !(self.eval(na.left) and self.eval(na.right)),
+
             .not_gate => |n| !self.eval(n.val),
         };
     }
@@ -77,8 +113,14 @@ pub const Circuit = struct {
 
 pub const Gate = union(enum) {
     input: bool,
+
     and_gate: Binary,
     or_gate: Binary,
+    xor_gate: Binary,
+
+    nor_gate: Binary,
+    nand_gate: Binary,
+
     not_gate: Unary,
 };
 
@@ -217,4 +259,109 @@ test "not" {
     // 1
     circuit.set_input(a, true);
     try std.testing.expectEqual(false, circuit.eval(not_a));
+}
+
+test "xor" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var circuit = Circuit{};
+    defer circuit.deinit(alloc);
+
+    const a = try circuit.input(alloc);
+    const b = try circuit.input(alloc);
+
+    const a_xor_b = try circuit.output(alloc, try circuit.xor_gate(alloc, a, b));
+
+    // 00
+    circuit.set_input(a, false);
+    circuit.set_input(b, false);
+    try std.testing.expectEqual(false, circuit.eval(a_xor_b));
+
+    // 01
+    circuit.set_input(a, false);
+    circuit.set_input(b, true);
+    try std.testing.expectEqual(true, circuit.eval(a_xor_b));
+
+    // 10
+    circuit.set_input(a, true);
+    circuit.set_input(b, false);
+    try std.testing.expectEqual(true, circuit.eval(a_xor_b));
+
+    // 11
+    circuit.set_input(a, true);
+    circuit.set_input(b, true);
+    try std.testing.expectEqual(false, circuit.eval(a_xor_b));
+}
+
+test "nor" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var circuit = Circuit{};
+    defer circuit.deinit(alloc);
+
+    const a = try circuit.input(alloc);
+    const b = try circuit.input(alloc);
+
+    const a_nor_b = try circuit.output(alloc, try circuit.nor_gate(alloc, a, b));
+
+    // 00
+    circuit.set_input(a, false);
+    circuit.set_input(b, false);
+    try std.testing.expectEqual(true, circuit.eval(a_nor_b));
+
+    // 01
+    circuit.set_input(a, false);
+    circuit.set_input(b, true);
+    try std.testing.expectEqual(false, circuit.eval(a_nor_b));
+
+    // 10
+    circuit.set_input(a, true);
+    circuit.set_input(b, false);
+    try std.testing.expectEqual(false, circuit.eval(a_nor_b));
+
+    // 11
+    circuit.set_input(a, true);
+    circuit.set_input(b, true);
+    try std.testing.expectEqual(false, circuit.eval(a_nor_b));
+}
+
+test "nand" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var circuit = Circuit{};
+    defer circuit.deinit(alloc);
+
+    const a = try circuit.input(alloc);
+    const b = try circuit.input(alloc);
+
+    const a_nand_b = try circuit.output(alloc, try circuit.nand_gate(alloc, a, b));
+
+    // 00
+    circuit.set_input(a, false);
+    circuit.set_input(b, false);
+    try std.testing.expectEqual(true, circuit.eval(a_nand_b));
+
+    // 01
+    circuit.set_input(a, false);
+    circuit.set_input(b, true);
+    try std.testing.expectEqual(true, circuit.eval(a_nand_b));
+
+    // 10
+    circuit.set_input(a, true);
+    circuit.set_input(b, false);
+    try std.testing.expectEqual(true, circuit.eval(a_nand_b));
+
+    // 11
+    circuit.set_input(a, true);
+    circuit.set_input(b, true);
+    try std.testing.expectEqual(false, circuit.eval(a_nand_b));
 }
