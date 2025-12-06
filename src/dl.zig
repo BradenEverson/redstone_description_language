@@ -41,6 +41,16 @@ pub const Circuit = struct {
         return .{ .id = idx };
     }
 
+    pub fn or_gate(self: *Circuit, alloc: std.mem.Allocator, a: GateId, b: GateId) !GateId {
+        const gate = Gate{ .or_gate = .{ .left = a, .right = b } };
+        const idx = self.gates.items.len;
+
+        try self.gates.append(alloc, gate);
+        try self.inputs.append(alloc, idx);
+
+        return .{ .id = idx };
+    }
+
     pub fn set_input(self: *Circuit, gate: GateId, val: bool) void {
         self.gates.items[gate.id] = .{ .input = val };
     }
@@ -140,4 +150,39 @@ test "and" {
     circuit.set_input(a, true);
     circuit.set_input(b, true);
     try std.testing.expectEqual(true, circuit.eval(a_and_b));
+}
+
+test "or" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var circuit = Circuit{};
+    defer circuit.deinit(alloc);
+
+    const a = try circuit.input(alloc);
+    const b = try circuit.input(alloc);
+
+    const a_or_b = try circuit.output(alloc, try circuit.or_gate(alloc, a, b));
+
+    // 00
+    circuit.set_input(a, false);
+    circuit.set_input(b, false);
+    try std.testing.expectEqual(false, circuit.eval(a_or_b));
+
+    // 01
+    circuit.set_input(a, false);
+    circuit.set_input(b, true);
+    try std.testing.expectEqual(true, circuit.eval(a_or_b));
+
+    // 10
+    circuit.set_input(a, true);
+    circuit.set_input(b, false);
+    try std.testing.expectEqual(true, circuit.eval(a_or_b));
+
+    // 11
+    circuit.set_input(a, true);
+    circuit.set_input(b, true);
+    try std.testing.expectEqual(true, circuit.eval(a_or_b));
 }
