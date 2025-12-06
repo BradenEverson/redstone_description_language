@@ -1,6 +1,6 @@
 -- I will probably not require this
-library ieee;
-use ieee.std_logic_1164.all;
+-- library ieee;
+-- use ieee.std_logic_1164.all;
 
 entity FIVE_DETECTOR is
     port(
