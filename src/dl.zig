@@ -3,9 +3,9 @@
 const std = @import("std");
 
 pub const Circuit = struct {
-    gates: std.ArrayList(Gate),
-    inputs: std.ArrayList(usize),
-    outputs: std.ArrayList(usize),
+    gates: std.ArrayList(Gate) = .{},
+    inputs: std.ArrayList(usize) = .{},
+    outputs: std.ArrayList(usize) = .{},
 
     pub fn deinit(self: *Circuit, alloc: std.mem.Allocator) void {
         self.inputs.deinit(alloc);
@@ -28,3 +28,17 @@ pub const Binary = struct {
 pub const Unary = struct {
     val: usize,
 };
+
+test "init" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var circuit = Circuit{};
+    defer circuit.deinit(alloc);
+
+    try std.testing.expectEqual(0, circuit.inputs.items.len);
+    try std.testing.expectEqual(0, circuit.outputs.items.len);
+    try std.testing.expectEqual(0, circuit.gates.items.len);
+}

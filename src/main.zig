@@ -28,3 +28,7 @@ pub fn main() void {
         std.debug.print("Missing Input file!!!\nUsage: ./redstone 'file.vhdl' or whatever\n", .{});
     }
 }
+
+test {
+    _ = @import("dl.zig");
+}
