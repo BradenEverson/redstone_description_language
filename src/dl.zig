@@ -51,6 +51,16 @@ pub const Circuit = struct {
         return .{ .id = idx };
     }
 
+    pub fn not_gate(self: *Circuit, alloc: std.mem.Allocator, a: GateId) !GateId {
+        const gate = Gate{ .not_gate = .{ .val = a } };
+        const idx = self.gates.items.len;
+
+        try self.gates.append(alloc, gate);
+        try self.inputs.append(alloc, idx);
+
+        return .{ .id = idx };
+    }
+
     pub fn set_input(self: *Circuit, gate: GateId, val: bool) void {
         self.gates.items[gate.id] = .{ .input = val };
     }
@@ -185,4 +195,26 @@ test "or" {
     circuit.set_input(a, true);
     circuit.set_input(b, true);
     try std.testing.expectEqual(true, circuit.eval(a_or_b));
+}
+
+test "not" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var circuit = Circuit{};
+    defer circuit.deinit(alloc);
+
+    const a = try circuit.input(alloc);
+
+    const not_a = try circuit.output(alloc, try circuit.not_gate(alloc, a));
+
+    // 0
+    circuit.set_input(a, false);
+    try std.testing.expectEqual(true, circuit.eval(not_a));
+
+    // 1
+    circuit.set_input(a, true);
+    try std.testing.expectEqual(false, circuit.eval(not_a));
 }
