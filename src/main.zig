@@ -1,5 +1,9 @@
 const std = @import("std");
 
+const dl = @import("dl.zig");
+const vhdl = @import("vhdl.zig");
+const world = @import("world.zig");
+
 pub fn main() void {
     // const alloc = std.heap.page_allocator;
 
