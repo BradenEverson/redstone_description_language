@@ -1,8 +1,7 @@
+//! NBT Parser and Generator Testing
 const std = @import("std");
 
-const dl = @import("dl.zig");
-const vhdl = @import("vhdl.zig");
-const world = @import("structure.zig");
+const nbt = @import("structure/nbt.zig");
 
 pub fn main() void {
     // const alloc = std.heap.page_allocator;
@@ -22,13 +21,6 @@ pub fn main() void {
         };
 
         defer alloc.free(data);
-
         std.debug.print("{s}\n", .{data});
-    } else {
-        std.debug.print("Missing Input file!!!\nUsage: ./redstone 'file.vhdl' or whatever\n", .{});
     }
-}
-
-test {
-    _ = @import("dl.zig");
 }

@@ -26,6 +26,28 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
+    const nbt = b.addExecutable(.{
+        .name = "nbt",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/nbt_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    b.installArtifact(nbt);
+
+    const nbt_step = b.step("nbt", "Run the NBT tester");
+
+    const nbt_cmd = b.addRunArtifact(nbt);
+    nbt_step.dependOn(&nbt_cmd.step);
+
+    nbt_cmd.step.dependOn(b.getInstallStep());
+
+    if (b.args) |args| {
+        nbt_cmd.addArgs(args);
+    }
+
     const exe_tests = b.addTest(.{
         .root_module = exe.root_module,
     });
