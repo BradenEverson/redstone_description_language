@@ -24,14 +24,22 @@ pub fn zip_nbt(alloc: std.mem.Allocator, path: []const u8, data: []u8) !void {
     defer file.close();
 
     var buf: [65536]u8 = undefined;
-    var file_writer = file.writer(&buf);
+    const file_writer = file.writer(&buf);
+    var out_file = file_writer.interface;
 
-    var comp = std.compress.flate.Compress.init(&file_writer.interface, data, .{ .container = .gzip });
+    var comp = std.compress.flate.Compress.init(&out_file, data, .{ .container = .gzip });
 
     var out: [65536]u8 = undefined;
     const len = try comp.writer.write(&out);
 
     try file.writeAll(out[0..len]);
-
     try comp.end();
+    try out_file.flush();
 }
+
+pub const NamedBinaryTree = struct {
+    pub fn from_unzipped_bytes(unzipped: []const u8) NamedBinaryTree {
+        _ = unzipped;
+        return NamedBinaryTree{};
+    }
+};
