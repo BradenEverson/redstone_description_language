@@ -13,6 +13,7 @@ pub fn main() void {
     _ = args.skip();
 
     if (args.next()) |file_path| {
-        nbt.parse_nbt(alloc, file_path) catch @panic("Failed to parse NBT file");
+        const data = nbt.unzip_nbt(alloc, file_path) catch @panic(":(");
+        nbt.zip_nbt(alloc, "test", data) catch @panic("dam");
     }
 }

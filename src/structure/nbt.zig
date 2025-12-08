@@ -2,7 +2,7 @@
 
 const std = @import("std");
 
-pub fn parse_nbt(alloc: std.mem.Allocator, path: []const u8) !void {
+pub fn unzip_nbt(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
     var file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
@@ -15,7 +15,23 @@ pub fn parse_nbt(alloc: std.mem.Allocator, path: []const u8) !void {
     const data = try decomp.reader.allocRemaining(alloc, .unlimited);
     defer alloc.free(data);
 
-    for (data) |byte| {
-        std.debug.print("0x{X:02}\n", .{byte});
-    }
+    return data;
+}
+
+pub fn zip_nbt(alloc: std.mem.Allocator, path: []const u8, data: []u8) !void {
+    _ = alloc;
+    var file = try std.fs.cwd().createFile(path, .{});
+    defer file.close();
+
+    var buf: [65536]u8 = undefined;
+    var file_writer = file.writer(&buf);
+
+    var comp = std.compress.flate.Compress.init(&file_writer.interface, data, .{ .container = .gzip });
+
+    var out: [65536]u8 = undefined;
+    const len = try comp.writer.write(&out);
+
+    try file.writeAll(out[0..len]);
+
+    try comp.end();
 }
