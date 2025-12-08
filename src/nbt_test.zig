@@ -4,8 +4,6 @@ const std = @import("std");
 const nbt = @import("structure/nbt.zig");
 
 pub fn main() void {
-    // const alloc = std.heap.page_allocator;
-
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 

@@ -15,5 +15,7 @@ pub fn parse_nbt(alloc: std.mem.Allocator, path: []const u8) !void {
     const data = try decomp.reader.allocRemaining(alloc, .unlimited);
     defer alloc.free(data);
 
-    std.debug.print("{s}\n", .{data});
+    for (data) |byte| {
+        std.debug.print("0x{X:02}\n", .{byte});
+    }
 }
