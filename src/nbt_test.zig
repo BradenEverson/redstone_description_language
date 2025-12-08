@@ -15,12 +15,6 @@ pub fn main() void {
     _ = args.skip();
 
     if (args.next()) |file_path| {
-        const data = std.fs.cwd().readFileAlloc(alloc, file_path, 65536) catch {
-            std.debug.print("Error: File does not exist!\n", .{});
-            std.process.exit(1);
-        };
-
-        defer alloc.free(data);
-        std.debug.print("{s}\n", .{data});
+        nbt.parse_nbt(alloc, file_path) catch @panic("Failed to parse NBT file");
     }
 }
