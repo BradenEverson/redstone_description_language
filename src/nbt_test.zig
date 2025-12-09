@@ -13,7 +13,7 @@ pub fn main() void {
     _ = args.skip();
 
     if (args.next()) |file_path| {
-        const data = nbt.unzip_nbt(alloc, file_path) catch @panic(":(");
-        nbt.zip_nbt(alloc, "test", data) catch @panic("dam");
+        const data = nbt.unzip_nbt(alloc, file_path) catch @panic("unzipping failed");
+        nbt.zip_nbt("test", data) catch @panic("zipping failed");
     }
 }

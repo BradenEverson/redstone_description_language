@@ -18,23 +18,22 @@ pub fn unzip_nbt(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
     return data;
 }
 
-pub fn zip_nbt(alloc: std.mem.Allocator, path: []const u8, data: []u8) !void {
-    _ = alloc;
+pub fn zip_nbt(path: []const u8, data: []const u8) !void {
     var file = try std.fs.cwd().createFile(path, .{});
     defer file.close();
 
-    var buf: [65536]u8 = undefined;
-    const file_writer = file.writer(&buf);
-    var out_file = file_writer.interface;
+    var file_buffer: [65536]u8 = undefined;
+    var file_stream = file.writer(&file_buffer);
+    const file_writer = &file_stream.interface;
 
-    var comp = std.compress.flate.Compress.init(&out_file, data, .{ .container = .gzip });
+    var comp_buffer: [65536]u8 = undefined;
 
-    var out: [65536]u8 = undefined;
-    const len = try comp.writer.write(&out);
+    var comp = std.compress.flate.Compress.init(file_writer, &comp_buffer, .{ .container = .gzip });
 
-    try file.writeAll(out[0..len]);
+    try comp.writer.writeAll(data);
+
     try comp.end();
-    try out_file.flush();
+    try file_writer.flush();
 }
 
 pub const NamedBinaryTree = struct {
