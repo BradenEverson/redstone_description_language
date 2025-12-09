@@ -14,6 +14,10 @@ pub fn main() void {
 
     if (args.next()) |file_path| {
         const data = nbt.unzip_nbt(alloc, file_path) catch @panic("unzipping failed");
-        nbt.zip_nbt("test", data) catch @panic("zipping failed");
+        defer alloc.free(data);
+        var info = nbt.NamedBinaryTree{};
+        info.load_unzipped_bytes(alloc, data) catch @panic("Failed to parse");
+
+        // nbt.zip_nbt("test", data) catch @panic("zipping failed");
     }
 }
