@@ -12,7 +12,32 @@ pub const TokenTag = enum {
     keyword,
     number,
     semicolon,
+    colon,
     dot,
+
+    open_paren,
+    close_paren,
+    lt,
+    gt,
+
+    equals,
+    eof,
+
+    /// Checks a single character for if it
+    /// is one of the basic token types
+    pub fn tryGetBasicToken(char: u8) ?TokenTag {
+        return switch (char) {
+            ':' => .colon,
+            ';' => .semicolon,
+            '.' => .dot,
+            '(' => .open_paren,
+            ')' => .close_paren,
+            '<' => .lt,
+            '>' => .gt,
+            '=' => .equals,
+            else => null,
+        };
+    }
 };
 
 pub const Keyword = enum {
@@ -92,7 +117,7 @@ pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.me
 
                 const ident = stream[start_idx..idx];
 
-                var tag = .ident;
+                var tag: TokenTag = .ident;
                 if (Keyword.tryFromStr(ident) != null) {
                     tag = .keyword;
                 }
@@ -117,36 +142,6 @@ pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.me
                     .data = number,
                 };
             },
-            '=' => {
-                idx += 1;
-                col += 1;
-                curr = Token{
-                    .tag = .equals,
-                    .line = line,
-                    .col = start_col,
-                    .data = stream[start_idx..idx],
-                };
-            },
-            '.' => {
-                idx += 1;
-                col += 1;
-                curr = Token{
-                    .tag = .dot,
-                    .line = line,
-                    .col = start_col,
-                    .data = stream[start_idx..idx],
-                };
-            },
-            ';' => {
-                idx += 1;
-                col += 1;
-                curr = Token{
-                    .tag = .semicolon,
-                    .line = line,
-                    .col = start_col,
-                    .data = stream[start_idx..idx],
-                };
-            },
             ' ', '\t' => {
                 while (idx < stream.len and (stream[idx] == ' ' or stream[idx] == '\t')) {
                     idx += 1;
@@ -166,10 +161,21 @@ pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.me
                 line += 1;
                 col = 1;
             },
-            else => {
-                std.debug.print("Unexpected character: '{c}' at line {}, col {}\n", .{ stream[idx], line, col });
+            else => |other| {
+                if (TokenTag.tryGetBasicToken(other)) |tag| {
+                    idx += 1;
+                    col += 1;
+                    curr = Token{
+                        .tag = tag,
+                        .line = line,
+                        .col = start_col,
+                        .data = stream[start_idx..idx],
+                    };
+                } else {
+                    std.debug.print("Unexpected character: '{c}' at line {}, col {}\n", .{ stream[idx], line, col });
 
-                return TokenizeError.UnexpectedCharacter;
+                    return TokenizeError.UnexpectedCharacter;
+                }
             },
         }
 
@@ -181,6 +187,65 @@ pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.me
     try tokens.append(alloc, .{ .col = col, .line = line, .tag = .eof, .data = undefined });
 }
 
-test "basic tokenization" {
-    // TODO
+test "entity tokenization" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    const token_stream =
+        \\entity IDENT is
+        \\port(
+        \\ foo: in std_logic;
+        \\ bar: out std_logic);
+        \\end entity IDENT;
+    ;
+
+    var tokens = std.ArrayList(Token){};
+    defer tokens.deinit(alloc);
+
+    try tokenize(token_stream, &tokens, alloc);
+
+    const expected_tags = [_]TokenTag{
+        .keyword,
+        .ident,
+        .keyword,
+        .keyword,
+        .open_paren,
+        .ident,
+        .colon,
+        .keyword,
+        .keyword,
+        .semicolon,
+        .ident,
+        .colon,
+        .keyword,
+        .keyword,
+        .close_paren,
+        .semicolon,
+        .keyword,
+        .keyword,
+        .ident,
+        .semicolon,
+    };
+
+    const expected_keyword = [_]Keyword{ .entity, .is, .port, .in, .std_logic, .out, .std_logic, .end, .entity };
+    var keywords_seen: usize = 0;
+
+    const expected_idents = [_][]const u8{ "IDENT", "foo", "bar", "IDENT" };
+    var idents_seen: usize = 0;
+
+    for (0..expected_tags.len) |i| {
+        try std.testing.expectEqual(expected_tags[i], tokens.items[i].tag);
+
+        if (Keyword.tryFromStr(tokens.items[i].data)) |keyword| {
+            try std.testing.expectEqual(expected_keyword[keywords_seen], keyword);
+            keywords_seen += 1;
+        }
+
+        if (tokens.items[i].tag == .ident) {
+            try std.testing.expectEqualStrings(expected_idents[idents_seen], tokens.items[i].data);
+            idents_seen += 1;
+        }
+    }
 }
