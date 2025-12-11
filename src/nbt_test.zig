@@ -2,6 +2,7 @@
 const std = @import("std");
 
 const nbt = @import("structure/nbt.zig");
+const tag = @import("structure/tag.zig");
 
 pub fn main() void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -13,10 +14,10 @@ pub fn main() void {
     _ = args.skip();
 
     if (args.next()) |file_path| {
-        const data = nbt.unzip_nbt(alloc, file_path) catch @panic("unzipping failed");
+        const data = nbt.unzipNbt(alloc, file_path) catch @panic("unzipping failed");
         defer alloc.free(data);
-        var info = nbt.NamedBinaryTree{};
-        info.load_unzipped_bytes(alloc, data) catch @panic("Failed to parse");
+        const val = nbt.loadUnzippedBytes(alloc, data) catch @panic("Failed to parse NBT");
+        defer alloc.destroy(val);
 
         // nbt.zip_nbt("test", data) catch @panic("zipping failed");
     }

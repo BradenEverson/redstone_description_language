@@ -1,20 +1,43 @@
 //! NBT Tag Types
 
-pub const Tag = enum(u8) {
-    end = 0,
-    byte = 1,
-    short = 2,
-    int = 3,
-    long = 4,
-    float = 5,
-    double = 6,
-    byte_array = 7,
-    string = 8,
-    list = 9,
-    compound = 10,
+const std = @import("std");
+
+pub const Tag = enum {
+    end,
+    byte,
+    short,
+    int,
+    long,
+    float,
+    double,
+    byte_array,
+    string,
+    list,
+    compound,
+
+    pub fn fromByte(byte: u8) !Tag {
+        return switch (byte) {
+            0 => .end,
+            1 => .byte,
+            2 => .short,
+            3 => .int,
+            4 => .long,
+            5 => .float,
+            6 => .double,
+            7 => .byte_array,
+            8 => .string,
+            9 => .list,
+            10 => .compound,
+            else => NbtParseError.UnknownTag,
+        };
+    }
 };
 
-pub const ParsedTag = union(Tag) {
+pub const NbtParseError = error{
+    UnknownTag,
+};
+
+pub const NbtNode = union(Tag) {
     end,
     byte: u8,
     short: u16,
@@ -24,6 +47,29 @@ pub const ParsedTag = union(Tag) {
     double: f64,
     byte_array: []const u8,
     string: []const u8,
-    list: []ParsedTag,
-    compound: []ParsedTag,
+    list: []*NbtNode,
+    compound: []*NbtNode,
+
+    pub fn parseSingular(alloc: std.mem.Allocator, data: []const u8) !*NbtNode {
+        const tag = try Tag.fromByte(data[0]);
+        std.debug.print("{any}\n", .{tag});
+
+        const node = try alloc.create(NbtNode);
+
+        switch (tag) {
+            .end => {},
+            .byte => {},
+            .short => {},
+            .int => {},
+            .long => {},
+            .float => {},
+            .double => {},
+            .byte_array => {},
+            .string => {},
+            .list => {},
+            .compound => {},
+        }
+
+        return node;
+    }
 };

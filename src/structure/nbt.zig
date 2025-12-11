@@ -2,7 +2,7 @@
 
 const std = @import("std");
 
-pub fn unzip_nbt(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
+pub fn unzipNbt(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
     var file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
@@ -17,7 +17,7 @@ pub fn unzip_nbt(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
     return data;
 }
 
-pub fn zip_nbt(path: []const u8, data: []const u8) !void {
+pub fn zipNbt(path: []const u8, data: []const u8) !void {
     var file = try std.fs.cwd().createFile(path, .{});
     defer file.close();
 
@@ -34,17 +34,9 @@ pub fn zip_nbt(path: []const u8, data: []const u8) !void {
     // try file_writer.flush();
 }
 
-pub const NamedBinaryTree = struct {
-    entries: std.AutoHashMapUnmanaged([]const u8, NbtValue) = .{},
+const tag = @import("tag.zig");
+const NbtNode = tag.NbtNode;
 
-    pub fn load_unzipped_bytes(self: *NamedBinaryTree, alloc: std.mem.Allocator, unzipped: []const u8) !void {
-        _ = self;
-        _ = alloc;
-
-        for (unzipped) |byte| {
-            std.debug.print("{X:2}\n", .{byte});
-        }
-    }
-};
-
-pub const NbtValue = union(enum) {};
+pub fn loadUnzippedBytes(alloc: std.mem.Allocator, unzipped: []const u8) !*NbtNode {
+    return NbtNode.parseSingular(alloc, unzipped);
+}
