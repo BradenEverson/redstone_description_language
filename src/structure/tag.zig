@@ -52,12 +52,27 @@ pub const NbtNode = union(Tag) {
 
     pub fn parseSingular(alloc: std.mem.Allocator, data: []const u8) !*NbtNode {
         const tag = try Tag.fromByte(data[0]);
+
+        const len_msb = @as(u16, data[1]);
+        const len_lsb = @as(u16, data[2]);
+
+        const len = len_msb << 8 | len_lsb;
+        var string: ?[]const u8 = null;
+
+        if (len > 0) {
+            string = data[3 .. 3 + len];
+        }
+
+        if (string) |name| {
+            std.debug.print("{s}\n", .{name});
+        }
+
         std.debug.print("{any}\n", .{tag});
 
         const node = try alloc.create(NbtNode);
 
         switch (tag) {
-            .end => {},
+            .end => node.* = .end,
             .byte => {},
             .short => {},
             .int => {},
