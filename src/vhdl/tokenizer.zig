@@ -23,11 +23,18 @@ pub const Keyword = enum {
     logic_nand,
     logic_nor,
 
+    in,
+    out,
+    std_logic,
+    std_logic_vector,
+    downto,
+
     architecture,
     entity,
     port,
     begin,
     end,
+    is,
 
     const mappings = std.StaticStringMap(Keyword).initComptime(.{
         .{ "or", .logic_or },
@@ -42,6 +49,13 @@ pub const Keyword = enum {
         .{ "port", .port },
         .{ "begin", .begin },
         .{ "end", .end },
+
+        .{ "in", .in },
+        .{ "out", .out },
+        .{ "std_logic", .std_logic },
+        .{ "std_logic_vector", .std_logic_vector },
+        .{ "downto", .downto },
+        .{ "is", .is },
     });
 
     pub fn tryFromStr(str: []const u8) ?Keyword {
