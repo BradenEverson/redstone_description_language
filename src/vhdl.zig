@@ -2,4 +2,5 @@
 
 test {
     _ = @import("vhdl/tokenizer.zig");
+    _ = @import("vhdl/parser.zig");
 }

@@ -1,0 +1,78 @@
+//! Parser for translating VHDL Tokens to a VHDL AST :D
+
+pub const std = @import("std");
+
+pub const tokenizer = @import("tokenizer.zig");
+pub const Token = tokenizer.Token;
+pub const TokenTag = tokenizer.TokenTag;
+
+pub const Expr = union(enum) {};
+
+pub const ParserError = error{
+    UnexpectedToken,
+    ExpectedSemicolon,
+    OutOfTokens,
+};
+
+pub const Parser = struct {
+    tokens: []const Token,
+    cursor: usize,
+    arena: std.heap.ArenaAllocator,
+
+    pub fn init(alloc: std.mem.Allocator, tokens: []const Token) Parser {
+        return Parser{
+            .arena = std.heap.ArenaAllocator.init(alloc),
+            .tokens = tokens,
+            .cursor = 0,
+        };
+    }
+
+    pub fn deinit(self: *Parser) void {
+        self.arena.deinit();
+    }
+
+    fn peek(self: *const Parser) TokenTag {
+        if (self.cursor >= self.tokens.len) {
+            return .eof;
+        }
+        return self.tokens[self.cursor].tag;
+    }
+
+    fn peek_n(self: *const Parser, n: comptime_int) TokenTag {
+        if (self.cursor + n >= self.tokens.len) {
+            return .eof;
+        }
+        return self.tokens[self.cursor + n].tag;
+    }
+
+    fn advance(self: *Parser) void {
+        if (self.cursor < self.tokens.len) {
+            self.cursor += 1;
+        }
+    }
+
+    fn consume(self: *Parser, tok: TokenTag) ParserError!void {
+        if (self.peek() == tok) {
+            self.advance();
+            return;
+        } else {
+            return ParserError.UnexpectedToken;
+        }
+    }
+
+    fn at_end(self: *Parser) bool {
+        return self.peek() == .eof;
+    }
+
+    pub fn parse(self: *Parser, ast: *std.ArrayList(*const Expr)) !void {
+        while (!self.at_end()) {
+            const expr = try self.statement();
+            try ast.append(self.arena.allocator(), expr);
+        }
+    }
+
+    pub fn statement(self: *Parser) !*const Expr {
+        _ = self;
+        return ParserError.OutOfTokens;
+    }
+};
