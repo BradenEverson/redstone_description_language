@@ -49,6 +49,7 @@ pub const Keyword = enum {
     logic_nor,
 
     in,
+    of,
     out,
     std_logic,
     std_logic_vector,
@@ -81,6 +82,7 @@ pub const Keyword = enum {
         .{ "std_logic_vector", .std_logic_vector },
         .{ "downto", .downto },
         .{ "is", .is },
+        .{ "of", .of },
     });
 
     pub fn tryFromStr(str: []const u8) ?Keyword {
@@ -233,6 +235,78 @@ test "entity tokenization" {
     var keywords_seen: usize = 0;
 
     const expected_idents = [_][]const u8{ "IDENT", "foo", "bar", "IDENT" };
+    var idents_seen: usize = 0;
+
+    for (0..expected_tags.len) |i| {
+        try std.testing.expectEqual(expected_tags[i], tokens.items[i].tag);
+
+        if (Keyword.tryFromStr(tokens.items[i].data)) |keyword| {
+            try std.testing.expectEqual(expected_keyword[keywords_seen], keyword);
+            keywords_seen += 1;
+        }
+
+        if (tokens.items[i].tag == .ident) {
+            try std.testing.expectEqualStrings(expected_idents[idents_seen], tokens.items[i].data);
+            idents_seen += 1;
+        }
+    }
+}
+
+test "simple architecture" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    const token_stream =
+        \\architecture LOGIC of IDENT is
+        \\begin
+        \\  bar <= not foo;
+        \\end architecture LOGIC;
+    ;
+
+    var tokens = std.ArrayList(Token){};
+    defer tokens.deinit(alloc);
+
+    try tokenize(token_stream, &tokens, alloc);
+
+    const expected_tags = [_]TokenTag{
+        .keyword,
+        .ident,
+        .keyword,
+        .ident,
+        .keyword,
+        .keyword,
+        .ident,
+        .lt,
+        .equals,
+        .keyword,
+        .ident,
+        .semicolon,
+        .keyword,
+        .keyword,
+        .ident,
+        .semicolon,
+    };
+
+    const expected_keyword = [_]Keyword{
+        .architecture,
+        .of,
+        .is,
+        .begin,
+        .logic_not,
+        .end,
+        .architecture,
+    };
+    var keywords_seen: usize = 0;
+
+    const expected_idents = [_][]const u8{
+        "LOGIC",
+        "IDENT",
+        "bar",
+        "foo",
+        "LOGIC",
+    };
     var idents_seen: usize = 0;
 
     for (0..expected_tags.len) |i| {
