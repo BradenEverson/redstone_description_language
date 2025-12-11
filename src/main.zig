@@ -31,4 +31,5 @@ pub fn main() void {
 
 test {
     _ = @import("dl.zig");
+    _ = @import("vhdl.zig");
 }

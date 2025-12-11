@@ -9,9 +9,44 @@ const TokenizeError = error{
 
 pub const TokenTag = enum {
     ident,
+    keyword,
     number,
     semicolon,
     dot,
+};
+
+pub const Keyword = enum {
+    logic_or,
+    logic_and,
+    logic_xor,
+    logic_not,
+    logic_nand,
+    logic_nor,
+
+    architecture,
+    entity,
+    port,
+    begin,
+    end,
+
+    const mappings = std.StaticStringMap(Keyword).initComptime(.{
+        .{ "or", .logic_or },
+        .{ "and", .logic_and },
+        .{ "xor", .logic_xor },
+        .{ "not", .logic_not },
+        .{ "nand", .logic_nand },
+        .{ "nor", .logic_nor },
+
+        .{ "architecture", .architecture },
+        .{ "entity", .entity },
+        .{ "port", .port },
+        .{ "begin", .begin },
+        .{ "end", .end },
+    });
+
+    pub fn tryFromStr(str: []const u8) ?Keyword {
+        return mappings.get(str);
+    }
 };
 
 pub const Token = struct {
@@ -40,9 +75,16 @@ pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.me
                     idx += 1;
                     col += 1;
                 }
+
                 const ident = stream[start_idx..idx];
+
+                var tag = .ident;
+                if (Keyword.tryFromStr(ident) != null) {
+                    tag = .keyword;
+                }
+
                 curr = Token{
-                    .tag = .ident,
+                    .tag = tag,
                     .line = line,
                     .col = start_col,
                     .data = ident,
@@ -123,4 +165,8 @@ pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.me
     }
 
     try tokens.append(alloc, .{ .col = col, .line = line, .tag = .eof, .data = undefined });
+}
+
+test "basic tokenization" {
+    // TODO
 }
