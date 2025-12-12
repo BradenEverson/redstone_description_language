@@ -29,7 +29,10 @@ pub fn main() void {
 
         defer alloc.free(data);
 
-        const circuit = vhdl.parseToCircuit(alloc, data);
+        const circuit = vhdl.parseToCircuit(alloc, data) catch {
+            std.debug.print("Failed to Parse VHDL file\n", .{});
+            std.process.exit(1);
+        };
         _ = circuit;
     } else {
         std.debug.print("Missing Input file!!!\nUsage: ./redstone 'file.vhdl' or whatever\n", .{});
