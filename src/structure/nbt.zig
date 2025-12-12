@@ -2,6 +2,9 @@
 
 const std = @import("std");
 
+const node = @import("node.zig");
+const NbtNode = node.NbtNode;
+
 pub fn unzipNbt(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
     var file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
@@ -33,9 +36,6 @@ pub fn zipNbt(path: []const u8, data: []const u8) !void {
     try comp.writer.flush();
     // try file_writer.flush();
 }
-
-const tag = @import("tag.zig");
-const NbtNode = tag.NbtNode;
 
 pub fn loadUnzippedBytes(alloc: std.mem.Allocator, unzipped: []const u8) !*NbtNode {
     const result, _ = try NbtNode.parseSingular(alloc, unzipped, true);
