@@ -35,7 +35,7 @@ pub fn main() void {
         };
         _ = circuit;
     } else {
-        std.debug.print("Missing Input file!!!\nUsage: ./redstone 'file.vhdl' or whatever\n", .{});
+        std.debug.print("Missing Input file!!!\nUsage: ./redstone 'file.vhd' or whatever\n", .{});
     }
 }
 
