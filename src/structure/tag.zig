@@ -141,6 +141,8 @@ pub const NbtNode = struct {
 
                     elems[i] = elem;
                 }
+
+                node.ty = .{ .list = elems };
             },
             .compound => {},
         }
