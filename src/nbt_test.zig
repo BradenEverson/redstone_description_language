@@ -24,6 +24,14 @@ pub fn main() void {
         const val = nbt.loadUnzippedBytes(a_alloc, data) catch @panic("Failed to parse NBT");
         std.debug.print("{f}\n", .{val});
 
+        var al = std.ArrayList(u8){};
+        defer al.deinit(alloc);
+
+        val.toBytes(alloc, &al, true, true) catch @panic(":(");
+
+        const val_2 = nbt.loadUnzippedBytes(a_alloc, al.items) catch @panic("Failed to parse NBT");
+        std.debug.print("{f}\n", .{val_2});
+
         // nbt.zip_nbt("test", data) catch @panic("zipping failed");
     }
 }

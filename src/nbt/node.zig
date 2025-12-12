@@ -2,18 +2,18 @@
 
 const std = @import("std");
 
-pub const Tag = enum {
-    end,
-    byte,
-    short,
-    int,
-    long,
-    float,
-    double,
-    byte_array,
-    string,
-    list,
-    compound,
+pub const Tag = enum(u8) {
+    end = 0,
+    byte = 1,
+    short = 2,
+    int = 3,
+    long = 4,
+    float = 5,
+    double = 6,
+    byte_array = 7,
+    string = 8,
+    list = 9,
+    compound = 10,
 
     pub fn fromByte(byte: u8) !Tag {
         return switch (byte) {
@@ -125,6 +125,123 @@ pub const NbtNode = struct {
                 elems.deinit(alloc);
             },
             else => {},
+        }
+    }
+
+    pub fn toBytes(self: *const NbtNode, alloc: std.mem.Allocator, buf: *std.ArrayList(u8), include_tag: bool, include_name: bool) !void {
+        const tag: Tag = self.ty;
+        if (include_tag) {
+            const tag_byte = @intFromEnum(tag);
+            try buf.append(alloc, tag_byte);
+        }
+
+        if (tag != .end and include_name) {
+            if (self.name) |name| {
+                const len = std.mem.toBytes(@as(u16, @truncate(name.len)));
+                try buf.append(alloc, len[1]);
+                try buf.append(alloc, len[0]);
+
+                for (name) |char| {
+                    try buf.append(alloc, char);
+                }
+            } else {
+                // No name, no len
+                try buf.append(alloc, 0x00);
+                try buf.append(alloc, 0x00);
+            }
+        }
+
+        switch (self.ty) {
+            .end => {},
+            .byte => |b| {
+                try buf.append(alloc, b);
+            },
+            .short => |s| {
+                const short = std.mem.toBytes(s);
+                try buf.append(alloc, short[1]);
+                try buf.append(alloc, short[0]);
+            },
+            .int => |i| {
+                const int = std.mem.toBytes(i);
+                try buf.append(alloc, int[3]);
+                try buf.append(alloc, int[2]);
+                try buf.append(alloc, int[1]);
+                try buf.append(alloc, int[0]);
+            },
+            .long => |l| {
+                const long = std.mem.toBytes(l);
+                try buf.append(alloc, long[7]);
+                try buf.append(alloc, long[6]);
+                try buf.append(alloc, long[5]);
+                try buf.append(alloc, long[4]);
+                try buf.append(alloc, long[3]);
+                try buf.append(alloc, long[2]);
+                try buf.append(alloc, long[1]);
+                try buf.append(alloc, long[0]);
+            },
+            .float => |f| {
+                const float = std.mem.toBytes(f);
+                try buf.append(alloc, float[3]);
+                try buf.append(alloc, float[2]);
+                try buf.append(alloc, float[1]);
+                try buf.append(alloc, float[0]);
+            },
+            .double => |d| {
+                const double = std.mem.toBytes(d);
+                try buf.append(alloc, double[7]);
+                try buf.append(alloc, double[6]);
+                try buf.append(alloc, double[5]);
+                try buf.append(alloc, double[4]);
+                try buf.append(alloc, double[3]);
+                try buf.append(alloc, double[2]);
+                try buf.append(alloc, double[1]);
+                try buf.append(alloc, double[0]);
+            },
+            .byte_array => |ba| {
+                const len = std.mem.toBytes(@as(u32, @truncate(ba.len)));
+                try buf.append(alloc, len[3]);
+                try buf.append(alloc, len[2]);
+                try buf.append(alloc, len[1]);
+                try buf.append(alloc, len[0]);
+
+                for (ba) |byte| {
+                    try buf.append(alloc, byte);
+                }
+            },
+            .string => |s| {
+                const len = std.mem.toBytes(@as(u16, @truncate(s.len)));
+                try buf.append(alloc, len[1]);
+                try buf.append(alloc, len[0]);
+
+                for (s) |byte| {
+                    try buf.append(alloc, byte);
+                }
+            },
+
+            .list => |l| {
+                var ty: Tag = .end;
+                if (l.len > 0) {
+                    ty = l[0].ty;
+                }
+
+                const ty_byte = @intFromEnum(ty);
+                try buf.append(alloc, ty_byte);
+
+                const len = std.mem.toBytes(@as(u32, @truncate(l.len)));
+                try buf.append(alloc, len[3]);
+                try buf.append(alloc, len[2]);
+                try buf.append(alloc, len[1]);
+                try buf.append(alloc, len[0]);
+
+                for (l) |li| {
+                    try li.toBytes(alloc, buf, false, false);
+                }
+            },
+            .compound => |c| {
+                for (c.items) |ci| {
+                    try ci.toBytes(alloc, buf, true, true);
+                }
+            },
         }
     }
 
@@ -514,4 +631,31 @@ test "compound" {
             try std.testing.expectEqualStrings(name, item.name.?);
         }
     }
+}
+
+test "simple byte serialization" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var bytes = std.ArrayList(u8){};
+    defer bytes.deinit(alloc);
+
+    const node = NbtNode{ .name = "hello", .ty = .{ .byte = 0x72 } };
+    try node.toBytes(alloc, &bytes, true);
+
+    const expected = [_]u8{
+        0x01,
+        0x00,
+        0x05,
+        'h',
+        'e',
+        'l',
+        'l',
+        'o',
+        0x72,
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected, bytes.items);
 }
