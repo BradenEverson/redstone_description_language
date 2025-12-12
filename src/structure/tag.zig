@@ -90,7 +90,6 @@ pub const NbtNode = struct {
         }
 
         const node = try alloc.create(NbtNode);
-        node.name = "";
 
         if (tag != .end and named) {
             const len_msb = @as(u16, data[used]);
@@ -188,7 +187,6 @@ test "simple parse" {
     defer alloc.destroy(res);
 
     try std.testing.expectEqual(.end, res.ty);
-    try std.testing.expectEqualStrings("", res.name);
 }
 
 test "named byte" {
