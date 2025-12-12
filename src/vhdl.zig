@@ -5,9 +5,9 @@ const std = @import("std");
 const dl = @import("dl.zig");
 const Circuit = dl.Circuit;
 
-pub fn parseToCircuit(alloc: std.mem.Allocator, path: []const u8) !Circuit {
+pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
     _ = alloc;
-    _ = path;
+    _ = data;
 
     return error.UnexpectedEOF;
 }

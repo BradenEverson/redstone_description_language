@@ -12,6 +12,12 @@ pub fn main() void {
 
     const alloc = gpa.allocator();
 
+    var arena = std.heap.ArenaAllocator.init(alloc);
+    defer arena.deinit();
+
+    const nbt_arena = arena.allocator();
+    _ = nbt_arena;
+
     var args = std.process.args();
     _ = args.skip();
 
@@ -23,7 +29,8 @@ pub fn main() void {
 
         defer alloc.free(data);
 
-        std.debug.print("{s}\n", .{data});
+        const circuit = vhdl.parseToCircuit(alloc, data);
+        _ = circuit;
     } else {
         std.debug.print("Missing Input file!!!\nUsage: ./redstone 'file.vhdl' or whatever\n", .{});
     }
