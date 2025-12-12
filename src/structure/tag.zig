@@ -49,11 +49,11 @@ pub const NbtType = union(Tag) {
     byte_array: []const u8,
     string: []const u8,
     list: []*NbtNode,
-    compound: []*NbtNode,
+    compound: std.ArrayList(*NbtNode),
 };
 
 pub const NbtNode = struct {
-    name: []const u8,
+    name: ?[]const u8,
     ty: NbtType,
 
     pub fn deinit(self: *NbtNode, alloc: std.mem.Allocator) void {
@@ -66,13 +66,13 @@ pub const NbtNode = struct {
 
                 alloc.free(elems);
             },
-            .compound => |elems| {
-                for (elems) |elem| {
+            .compound => |*elems| {
+                for (elems.items) |elem| {
                     elem.deinit(alloc);
                     alloc.destroy(elem);
                 }
 
-                alloc.free(elems);
+                elems.deinit(alloc);
             },
             else => {},
         }
@@ -90,6 +90,7 @@ pub const NbtNode = struct {
         }
 
         const node = try alloc.create(NbtNode);
+        node.name = null;
 
         if (tag != .end and named) {
             const len_msb = @as(u16, data[used]);
@@ -145,7 +146,14 @@ pub const NbtNode = struct {
                 node.ty = .{ .double = num };
                 used += 8;
             },
-            .byte_array => {},
+            .byte_array => {
+                const buf: *const [4]u8 = @ptrCast(data[used .. used + 4].ptr);
+                const len = std.mem.readInt(u32, buf, .big);
+                used += 4;
+
+                node.ty = .{ .byte_array = data[used .. used + len] };
+                used += len;
+            },
             .string => {
                 const buf: *const [2]u8 = @ptrCast(data[used .. used + 2].ptr);
                 const len = std.mem.readInt(u16, buf, .big);
@@ -176,7 +184,24 @@ pub const NbtNode = struct {
 
                 node.ty = .{ .list = elems };
             },
-            .compound => {},
+            .compound => {
+                var sub_elems = std.ArrayList(*NbtNode){};
+                var curr, var used_len = try NbtNode.parseSingular(alloc, data[used..], true, null);
+                used += used_len;
+
+                try sub_elems.append(alloc, curr);
+                var curr_ty: Tag = curr.ty;
+
+                while (curr_ty != .end) {
+                    curr, used_len = try NbtNode.parseSingular(alloc, data[used..], true, null);
+                    used += used_len;
+                    curr_ty = curr.ty;
+
+                    try sub_elems.append(alloc, curr);
+                }
+
+                node.ty = .{ .compound = sub_elems };
+            },
         }
 
         return .{ node, used };
@@ -216,7 +241,7 @@ test "named byte" {
     const ty: Tag = res.ty;
     try std.testing.expectEqual(.byte, ty);
     try std.testing.expectEqual(0x72, res.ty.byte);
-    try std.testing.expectEqualStrings("hi", res.name);
+    try std.testing.expectEqualStrings("hi", res.name.?);
 }
 
 test "named short" {
@@ -243,7 +268,7 @@ test "named short" {
     const ty: Tag = res.ty;
     try std.testing.expectEqual(.short, ty);
     try std.testing.expectEqual(0x7007, res.ty.short);
-    try std.testing.expectEqualStrings("short", res.name);
+    try std.testing.expectEqualStrings("short", res.name.?);
 }
 
 test "named int" {
@@ -270,7 +295,7 @@ test "named int" {
     const ty: Tag = res.ty;
     try std.testing.expectEqual(.int, ty);
     try std.testing.expectEqual(0x12345678, res.ty.int);
-    try std.testing.expectEqualStrings("int", res.name);
+    try std.testing.expectEqualStrings("int", res.name.?);
 }
 
 test "named long" {
@@ -302,7 +327,7 @@ test "named long" {
     const ty: Tag = res.ty;
     try std.testing.expectEqual(.long, ty);
     try std.testing.expectEqual(0xDEADBEEF12345678, res.ty.long);
-    try std.testing.expectEqualStrings("long", res.name);
+    try std.testing.expectEqualStrings("long", res.name.?);
 }
 
 test "list" {
@@ -343,12 +368,14 @@ test "list" {
     };
     const res, _ = try NbtNode.parseSingular(alloc, &nbt, true, null);
 
-    defer res.deinit(alloc);
-    defer alloc.destroy(res);
+    defer {
+        res.deinit(alloc);
+        alloc.destroy(res);
+    }
 
     const ty: Tag = res.ty;
     try std.testing.expectEqual(.list, ty);
-    try std.testing.expectEqualStrings("list :O", res.name);
+    try std.testing.expectEqualStrings("list :O", res.name.?);
 
     const expected = [_]u16{ 0x0102, 0x0304, 0x0506, 0x0708 };
 
@@ -386,5 +413,55 @@ test "string" {
     const ty: Tag = res.ty;
     try std.testing.expectEqual(.string, ty);
     try std.testing.expectEqualStrings("world", res.ty.string);
-    try std.testing.expectEqualStrings("hello", res.name);
+    try std.testing.expectEqualStrings("hello", res.name.?);
+}
+
+test "compound" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    const nbt = [_]u8{
+        0x0a,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x04,
+        't',
+        'y',
+        'p',
+        'e',
+        0x72,
+        0x00,
+    };
+    const res, _ = try NbtNode.parseSingular(alloc, &nbt, true, null);
+    defer {
+        res.deinit(alloc);
+        alloc.destroy(res);
+    }
+
+    const ty: Tag = res.ty;
+    try std.testing.expectEqual(.compound, ty);
+    try std.testing.expectEqual(null, res.name);
+
+    const expected = [_]NbtNode{
+        .{
+            .name = "type",
+            .ty = .{ .byte = 0x72 },
+        },
+
+        .{
+            .name = null,
+            .ty = .end,
+        },
+    };
+
+    for (res.ty.compound.items, 0..) |item, i| {
+        try std.testing.expectEqual(expected[i].ty, item.ty);
+        if (expected[i].name) |name| {
+            try std.testing.expectEqualStrings(name, item.name.?);
+        }
+    }
 }
