@@ -1,4 +1,4 @@
-//! NBT Tag Types
+//! NBT Node Parsing
 
 const std = @import("std");
 
@@ -35,7 +35,6 @@ pub const Tag = enum(u8) {
 
 pub const NbtParseError = error{
     UnknownTag,
-    WrongTypeInList,
 };
 
 pub const NbtType = union(Tag) {
