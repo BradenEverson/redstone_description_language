@@ -146,7 +146,14 @@ pub const NbtNode = struct {
                 used += 8;
             },
             .byte_array => {},
-            .string => {},
+            .string => {
+                const buf: *const [2]u8 = @ptrCast(data[used .. used + 2].ptr);
+                const len = std.mem.readInt(u16, buf, .big);
+                used += 2;
+
+                node.ty = .{ .string = data[used .. used + len] };
+                used += len;
+            },
             .list => {
                 const list_tag = try Tag.fromByte(data[used]);
                 used += 1;
@@ -348,4 +355,36 @@ test "list" {
     for (res.ty.list, 0..) |elem, i| {
         try std.testing.expectEqual(expected[i], elem.ty.short);
     }
+}
+
+test "string" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    const nbt = [_]u8{
+        0x08,
+        0x00,
+        0x05,
+        'h',
+        'e',
+        'l',
+        'l',
+        'o',
+        0x00,
+        0x05,
+        'w',
+        'o',
+        'r',
+        'l',
+        'd',
+    };
+    const res, _ = try NbtNode.parseSingular(alloc, &nbt, true, null);
+    defer alloc.destroy(res);
+
+    const ty: Tag = res.ty;
+    try std.testing.expectEqual(.string, ty);
+    try std.testing.expectEqualStrings("world", res.ty.string);
+    try std.testing.expectEqualStrings("hello", res.name);
 }
