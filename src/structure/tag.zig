@@ -37,7 +37,7 @@ pub const NbtParseError = error{
     UnknownTag,
 };
 
-pub const NbtNode = union(Tag) {
+pub const NbtType = union(Tag) {
     end,
     byte: u8,
     short: u16,
@@ -49,27 +49,38 @@ pub const NbtNode = union(Tag) {
     string: []const u8,
     list: []*NbtNode,
     compound: []*NbtNode,
+};
 
-    pub fn parseSingular(alloc: std.mem.Allocator, data: []const u8) !*NbtNode {
+pub const NbtNode = struct {
+    name: ?[]const u8,
+    ty: NbtType,
+
+    pub fn parseSingular(alloc: std.mem.Allocator, data: []const u8) !struct { *NbtNode, []const u8 } {
         const tag = try Tag.fromByte(data[0]);
+        const node = try alloc.create(NbtNode);
 
-        const len_msb = @as(u16, data[1]);
-        const len_lsb = @as(u16, data[2]);
+        var used = 1;
 
-        const len = len_msb << 8 | len_lsb;
-        var string: ?[]const u8 = null;
+        if (tag != .end) {
+            const len_msb = @as(u16, data[1]);
+            const len_lsb = @as(u16, data[2]);
 
-        if (len > 0) {
-            string = data[3 .. 3 + len];
-        }
+            const len = len_msb << 8 | len_lsb;
+            var string: ?[]const u8 = null;
 
-        if (string) |name| {
-            std.debug.print("{s}\n", .{name});
+            if (len > 0) {
+                string = data[3 .. 3 + len];
+            }
+
+            if (string) |name| {
+                std.debug.print("{s}\n", .{name});
+                node.name = name;
+            }
+
+            used += 2 + len;
         }
 
         std.debug.print("{any}\n", .{tag});
-
-        const node = try alloc.create(NbtNode);
 
         switch (tag) {
             .end => node.* = .end,
@@ -85,6 +96,6 @@ pub const NbtNode = union(Tag) {
             .compound => {},
         }
 
-        return node;
+        return .{ node, data[used..] };
     }
 };
