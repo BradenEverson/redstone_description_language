@@ -633,7 +633,24 @@ test "compound" {
     }
 }
 
-test "simple byte serialization" {
+test "pretty much empty" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var bytes = std.ArrayList(u8){};
+    defer bytes.deinit(alloc);
+
+    const node = NbtNode{ .name = null, .ty = .end };
+    try node.toBytes(alloc, &bytes, true, true);
+
+    const expected = [_]u8{0x00};
+
+    try std.testing.expectEqualSlices(u8, &expected, bytes.items);
+}
+
+test "byte serialization" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
@@ -643,7 +660,7 @@ test "simple byte serialization" {
     defer bytes.deinit(alloc);
 
     const node = NbtNode{ .name = "hello", .ty = .{ .byte = 0x72 } };
-    try node.toBytes(alloc, &bytes, true);
+    try node.toBytes(alloc, &bytes, true, true);
 
     const expected = [_]u8{
         0x01,
@@ -656,6 +673,57 @@ test "simple byte serialization" {
         'o',
         0x72,
     };
+
+    try std.testing.expectEqualSlices(u8, &expected, bytes.items);
+}
+
+test "short serialization" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var bytes = std.ArrayList(u8){};
+    defer bytes.deinit(alloc);
+
+    const node = NbtNode{ .name = null, .ty = .{ .short = 0x7007 } };
+    try node.toBytes(alloc, &bytes, true, true);
+
+    const expected = [_]u8{ 0x02, 0x00, 0x00, 0x70, 0x07 };
+
+    try std.testing.expectEqualSlices(u8, &expected, bytes.items);
+}
+
+test "int serialization" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var bytes = std.ArrayList(u8){};
+    defer bytes.deinit(alloc);
+
+    const node = NbtNode{ .name = null, .ty = .{ .int = 0xDEADBEEF } };
+    try node.toBytes(alloc, &bytes, true, true);
+
+    const expected = [_]u8{ 0x03, 0x00, 0x00, 0xDE, 0xAD, 0xBE, 0xEF };
+
+    try std.testing.expectEqualSlices(u8, &expected, bytes.items);
+}
+
+test "long serialization" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var bytes = std.ArrayList(u8){};
+    defer bytes.deinit(alloc);
+
+    const node = NbtNode{ .name = null, .ty = .{ .long = 0xDEADBEEFFEEBDAED } };
+    try node.toBytes(alloc, &bytes, true, true);
+
+    const expected = [_]u8{ 0x04, 0x00, 0x00, 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEB, 0xDA, 0xED };
 
     try std.testing.expectEqualSlices(u8, &expected, bytes.items);
 }
