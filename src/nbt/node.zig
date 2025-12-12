@@ -727,3 +727,20 @@ test "long serialization" {
 
     try std.testing.expectEqualSlices(u8, &expected, bytes.items);
 }
+
+test "string serialization" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    var bytes = std.ArrayList(u8){};
+    defer bytes.deinit(alloc);
+
+    const node = NbtNode{ .name = null, .ty = .{ .string = "hello" } };
+    try node.toBytes(alloc, &bytes, true, true);
+
+    const expected = [_]u8{ 0x08, 0x00, 0x00, 0x00, 0x05, 'h', 'e', 'l', 'l', 'o' };
+
+    try std.testing.expectEqualSlices(u8, &expected, bytes.items);
+}
