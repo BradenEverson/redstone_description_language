@@ -38,6 +38,6 @@ const tag = @import("tag.zig");
 const NbtNode = tag.NbtNode;
 
 pub fn loadUnzippedBytes(alloc: std.mem.Allocator, unzipped: []const u8) !*NbtNode {
-    const result, _ = try NbtNode.parseSingular(alloc, unzipped);
+    const result, _ = try NbtNode.parseSingular(alloc, unzipped, true);
     return result;
 }
