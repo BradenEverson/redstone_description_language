@@ -83,7 +83,7 @@ pub const NbtNode = struct {
         std.debug.print("{any}\n", .{tag});
 
         switch (tag) {
-            .end => node.* = .end,
+            .end => node.ty = .end,
             .byte => {},
             .short => {},
             .int => {},
@@ -99,3 +99,16 @@ pub const NbtNode = struct {
         return .{ node, data[used..] };
     }
 };
+
+test "simple parse" {
+    const gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    const end = .{0x00};
+    const res, _ = try NbtNode.parseSingular(alloc, end);
+    defer alloc.destroy(res);
+
+    try std.testing.expectEqual(.end, res.ty);
+}
