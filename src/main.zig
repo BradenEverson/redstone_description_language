@@ -51,4 +51,5 @@ test {
     _ = @import("vhdl.zig");
     _ = @import("nbt.zig");
     _ = @import("nbt/node.zig");
+    _ = @import("construction.zig");
 }
