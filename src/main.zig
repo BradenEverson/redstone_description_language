@@ -2,7 +2,7 @@ const std = @import("std");
 
 const dl = @import("dl.zig");
 const vhdl = @import("vhdl.zig");
-const world = @import("structure.zig");
+const world = @import("nbt.zig");
 
 pub fn main() void {
     // const alloc = std.heap.page_allocator;
@@ -32,6 +32,6 @@ pub fn main() void {
 test {
     _ = @import("dl.zig");
     _ = @import("vhdl.zig");
-    _ = @import("structure/nbt.zig");
-    _ = @import("structure/node.zig");
+    _ = @import("nbt.zig");
+    _ = @import("nbt/node.zig");
 }

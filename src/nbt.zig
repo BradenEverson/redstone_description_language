@@ -2,7 +2,7 @@
 
 const std = @import("std");
 
-const node = @import("node.zig");
+const node = @import("nbt/node.zig");
 const NbtNode = node.NbtNode;
 
 pub fn unzipNbt(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
@@ -38,6 +38,6 @@ pub fn zipNbt(path: []const u8, data: []const u8) !void {
 }
 
 pub fn loadUnzippedBytes(alloc: std.mem.Allocator, unzipped: []const u8) !*NbtNode {
-    const result, _ = try NbtNode.parseSingular(alloc, unzipped, true);
+    const result, _ = try NbtNode.parseSingular(alloc, unzipped, true, null);
     return result;
 }

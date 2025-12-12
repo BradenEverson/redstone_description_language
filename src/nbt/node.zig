@@ -56,6 +56,56 @@ pub const NbtNode = struct {
     name: ?[]const u8,
     ty: NbtType,
 
+    pub fn format(
+        self: *const NbtNode,
+        writer: anytype,
+    ) !void {
+        if (self.name) |name| {
+            try writer.print("{s} ", .{name});
+        }
+        switch (self.ty) {
+            .end => {
+                try writer.print("[[end]]\n", .{});
+            },
+            .byte => |b| {
+                try writer.print("[[byte]]: 0x{X}\n", .{b});
+            },
+            .short => |s| {
+                try writer.print("[[short]]: {d}\n", .{s});
+            },
+            .int => |i| {
+                try writer.print("[[int]]: {d}\n", .{i});
+            },
+            .long => |l| {
+                try writer.print("[[long]]: {d}\n", .{l});
+            },
+            .float => |f| {
+                try writer.print("[[float]]: {d}\n", .{f});
+            },
+            .double => |d| {
+                try writer.print("[[double]]: {d}\n", .{d});
+            },
+            .byte_array => |ba| {
+                try writer.print("[[byte array]]: {any}\n", .{ba});
+            },
+            .string => |s| {
+                try writer.print("[[string]]: {s}\n", .{s});
+            },
+            .list => |l| {
+                try writer.print("[[list]]:\n", .{});
+                for (l) |elem| {
+                    try writer.print("\t{f}", .{elem});
+                }
+            },
+            .compound => |c| {
+                try writer.print("[[compound]]:\n", .{});
+                for (c.items) |elem| {
+                    try writer.print("\t{f}", .{elem});
+                }
+            },
+        }
+    }
+
     pub fn deinit(self: *NbtNode, alloc: std.mem.Allocator) void {
         switch (self.ty) {
             .list => |elems| {

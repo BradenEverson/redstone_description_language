@@ -1,8 +1,8 @@
 //! NBT Parser and Generator Testing
 const std = @import("std");
 
-const nbt = @import("structure/nbt.zig");
-const tag = @import("structure/tag.zig");
+const nbt = @import("nbt.zig");
+const node = @import("nbt/node.zig");
 
 pub fn main() void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -22,7 +22,7 @@ pub fn main() void {
         const data = nbt.unzipNbt(alloc, file_path) catch @panic("unzipping failed");
         defer alloc.free(data);
         const val = nbt.loadUnzippedBytes(a_alloc, data) catch @panic("Failed to parse NBT");
-        _ = val;
+        std.debug.print("{f}\n", .{val});
 
         // nbt.zip_nbt("test", data) catch @panic("zipping failed");
     }
