@@ -14,6 +14,9 @@ pub const TokenTag = enum {
     semicolon,
     colon,
     dot,
+    comma,
+    single_quote,
+    double_quote,
 
     open_paren,
     close_paren,
@@ -29,7 +32,10 @@ pub const TokenTag = enum {
         return switch (char) {
             ':' => .colon,
             ';' => .semicolon,
+            '\'' => .single_quote,
+            '"' => .double_quote,
             '.' => .dot,
+            ',' => .comma,
             '(' => .open_paren,
             ')' => .close_paren,
             '<' => .lt,
@@ -55,6 +61,11 @@ pub const Keyword = enum {
     std_logic_vector,
     downto,
 
+    with,
+    select,
+    when,
+    others,
+
     architecture,
     entity,
     port,
@@ -63,6 +74,11 @@ pub const Keyword = enum {
     is,
 
     const mappings = std.StaticStringMap(Keyword).initComptime(.{
+        .{ "with", .with },
+        .{ "select", .select },
+        .{ "when", .when },
+        .{ "others", .others },
+
         .{ "or", .logic_or },
         .{ "and", .logic_and },
         .{ "xor", .logic_xor },
@@ -327,5 +343,106 @@ test "simple architecture" {
             try std.testing.expectEqualStrings(expected_idents[idents_seen], tokens.items[i].data);
             idents_seen += 1;
         }
+    }
+}
+
+test "with select architecture" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    const token_stream =
+        \\architecture MUX of IDENT is
+        \\begin
+        \\  with FOO select
+        \\  BAR <= B"101" when B"000",
+        \\         B"010" when B"001",
+        \\         B"100" when B"010",
+        \\         B"111" when others;
+        \\end architecture MUX;
+    ;
+
+    var tokens = std.ArrayList(Token){};
+    defer tokens.deinit(alloc);
+
+    try tokenize(token_stream, &tokens, alloc);
+
+    const expected_tags = [_]TokenTag{
+        // architecture MUX of IDENT is
+        .keyword,
+        .ident,
+        .keyword,
+        .ident,
+        .keyword,
+
+        // begin
+        .keyword,
+
+        // with FOO select
+        .keyword,
+        .ident,
+        .keyword,
+
+        // BAR <= B"101" when B"000",
+        .ident,
+        .lt,
+        .equals,
+        .ident,
+        .double_quote,
+        .number,
+        .double_quote,
+        .keyword,
+        .ident,
+        .double_quote,
+        .number,
+        .double_quote,
+        .comma,
+
+        // B"010" when B"001",
+        .ident,
+        .double_quote,
+        .number,
+        .double_quote,
+        .keyword,
+        .ident,
+        .double_quote,
+        .number,
+        .double_quote,
+        .comma,
+
+        // B"100" when B"010",
+        .ident,
+        .double_quote,
+        .number,
+        .double_quote,
+        .keyword,
+        .ident,
+        .double_quote,
+        .number,
+        .double_quote,
+        .comma,
+
+        // B"111" when others;
+        .ident,
+        .double_quote,
+        .number,
+        .double_quote,
+        .keyword,
+        .keyword,
+        .semicolon,
+
+        // end architecture MUX;
+        .keyword,
+        .keyword,
+        .ident,
+        .semicolon,
+        .eof,
+    };
+
+    try std.testing.expectEqual(expected_tags.len, tokens.items.len);
+
+    for (0..expected_tags.len) |i| {
+        try std.testing.expectEqual(expected_tags[i], tokens.items[i].tag);
     }
 }
