@@ -229,6 +229,7 @@ test "entity tokenization" {
         .keyword,
         .ident,
         .semicolon,
+        .eof,
     };
 
     const expected_keyword = [_]Keyword{ .entity, .is, .port, .in, .std_logic, .out, .std_logic, .end, .entity };
@@ -287,6 +288,7 @@ test "simple architecture" {
         .keyword,
         .ident,
         .semicolon,
+        .eof,
     };
 
     const expected_keyword = [_]Keyword{
