@@ -238,6 +238,8 @@ test "entity tokenization" {
     const expected_idents = [_][]const u8{ "IDENT", "foo", "bar", "IDENT" };
     var idents_seen: usize = 0;
 
+    try std.testing.expectEqual(expected_tags.len, tokens.items.len);
+
     for (0..expected_tags.len) |i| {
         try std.testing.expectEqual(expected_tags[i], tokens.items[i].tag);
 
@@ -310,6 +312,8 @@ test "simple architecture" {
         "LOGIC",
     };
     var idents_seen: usize = 0;
+
+    try std.testing.expectEqual(expected_tags.len, tokens.items.len);
 
     for (0..expected_tags.len) |i| {
         try std.testing.expectEqual(expected_tags[i], tokens.items[i].tag);
