@@ -21,20 +21,12 @@ pub fn unzipNbt(alloc: std.mem.Allocator, path: []const u8) ![]u8 {
 }
 
 pub fn zipNbt(path: []const u8, data: []const u8) !void {
-    var file = try std.fs.cwd().createFile(path, .{});
+    const cwd = std.fs.cwd();
+
+    var file = try cwd.createFile(path, .{});
     defer file.close();
 
-    var file_buffer: [65536]u8 = undefined;
-    var file_stream = file.writer(&file_buffer);
-    const file_writer = &file_stream.interface;
-
-    var comp_buffer: [65536]u8 = undefined;
-
-    var comp = std.compress.flate.Compress.init(file_writer, &comp_buffer, .{ .container = .gzip });
-
-    _ = try comp.writer.write(data);
-    try comp.writer.flush();
-    // try file_writer.flush();
+    try file.writeAll(data);
 }
 
 pub fn loadUnzippedBytes(alloc: std.mem.Allocator, unzipped: []const u8) !*NbtNode {

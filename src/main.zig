@@ -34,6 +34,7 @@ pub fn main() void {
             std.process.exit(1);
         };
 
+        var entity = construction.CircuitEntity.init(alloc, 1, 1, 1);
         const ir = construction.translateToEntity(alloc, circuit) catch @panic("Failed to translate");
         const nbt_ir = ir.toNbt(nbt_arena) catch @panic("Failed to create NBT IR");
 

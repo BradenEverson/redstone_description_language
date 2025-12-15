@@ -32,6 +32,6 @@ pub fn main() void {
         const val_2 = nbt.loadUnzippedBytes(a_alloc, al.items) catch @panic("Failed to parse NBT");
         std.debug.print("{f}\n", .{val_2});
 
-        // nbt.zip_nbt("test", data) catch @panic("zipping failed");
+        nbt.zipNbt("out.nbt", al.items) catch @panic("zipping failed");
     }
 }

@@ -6,19 +6,19 @@ const Circuit = @import("dl.zig").Circuit;
 const NbtNode = @import("nbt/node.zig").NbtNode;
 
 pub const BlockType = enum(u8) {
+    air,
     redstone_dust,
     redstone_torch,
     comparator,
     repeater,
-    air = 0x0,
 };
 
 pub const Block = union(BlockType) {
+    air,
     redstone_dust,
     redstone_torch,
     comparator: u8,
     repeater: u8,
-    air,
 };
 
 pub const CircuitEntity = struct {
@@ -55,8 +55,8 @@ pub const CircuitEntity = struct {
     }
 };
 
-pub fn translateToEntity(alloc: std.mem.Allocator, circuit: Circuit) !CircuitEntity {
+pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
+    _ = self;
     _ = alloc;
     _ = circuit;
-    return .{};
 }
