@@ -31,7 +31,7 @@ pub const CircuitEntity = struct {
     pub fn init(alloc: std.mem.Allocator, w: usize, h: usize, l: usize) !CircuitEntity {
         const buf = try alloc.alloc(Block, w * h * l);
         for (buf) |*item| {
-            item = .air;
+            item.* = .air;
         }
 
         return CircuitEntity{
@@ -53,10 +53,10 @@ pub const CircuitEntity = struct {
 
         return .{ .name = null, .ty = .end };
     }
-};
 
-pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
-    _ = self;
-    _ = alloc;
-    _ = circuit;
-}
+    pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
+        _ = self;
+        _ = alloc;
+        _ = circuit;
+    }
+};

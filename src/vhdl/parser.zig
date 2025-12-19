@@ -6,7 +6,44 @@ pub const tokenizer = @import("tokenizer.zig");
 pub const Token = tokenizer.Token;
 pub const TokenTag = tokenizer.TokenTag;
 
-pub const Expr = union(enum) {};
+pub const TopLevel = union(enum) {
+    entity: EntityDef,
+    arch: Architecture,
+};
+
+pub const Architecture = struct {
+    name: []const u8,
+    of: []const u8,
+
+    internal_signals: []IO,
+    mappings: []Expr,
+};
+
+pub const Expr = union(enum) {
+    binary: struct { left: *const Expr, op: BinaryOp, right: *const Expr },
+    input: usize,
+};
+
+pub const BinaryOp = enum {
+    binary_and,
+    binary_or,
+    binary_xor,
+};
+
+pub const EntityDef = struct {
+    inputs: []IO,
+    outputs: []IO,
+};
+
+pub const IO = struct {
+    name: []const u8,
+    ty: StdLogic,
+};
+
+pub const StdLogic = union(enum) {
+    single,
+    vector: u8,
+};
 
 pub const ParserError = error{
     UnexpectedToken,
