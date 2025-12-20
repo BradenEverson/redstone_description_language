@@ -270,12 +270,28 @@ pub const Parser = struct {
     }
 
     pub fn architecture(self: *Parser, alloc: std.mem.Allocator, name: []const u8, of_entity: []const u8) !*const TopLevel {
-        _ = self;
-        _ = alloc;
-        _ = name;
-        _ = of_entity;
+        const tl = try alloc.create(TopLevel);
+        errdefer alloc.destroy(tl);
 
-        return ParserError.OutOfTokens;
+        const arch: Architecture = .{ .name = name, .of = of_entity, .internal_signals = .{}, .mappings = undefined };
+
+        switch (self.peek()) {
+            .keyword => switch (self.peekWhole().toKeyword().?) {
+                .begin => {
+                    self.advance();
+                    while (!self.peekWhole().isKeyword(.end)) {
+                        self.advance();
+                    }
+                },
+                else => return ParserError.UnexpectedKeyword,
+            },
+
+            .eof => return ParserError.OutOfTokens,
+            else => return ParserError.UnexpectedToken,
+        }
+
+        tl.* = .{ .arch = arch };
+        return tl;
     }
 };
 

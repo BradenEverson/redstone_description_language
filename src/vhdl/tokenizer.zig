@@ -118,6 +118,13 @@ pub const Token = struct {
             else => null,
         };
     }
+
+    pub fn isKeyword(self: *const Token, kw: Keyword) bool {
+        return switch (self.tag) {
+            .keyword => return Keyword.tryFromStr(self.data).? == kw,
+            else => false,
+        };
+    }
 };
 
 pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.mem.Allocator) !void {
