@@ -4,6 +4,7 @@ pub const std = @import("std");
 
 pub const tokenizer = @import("tokenizer.zig");
 pub const Token = tokenizer.Token;
+pub const Keyword = tokenizer.Keyword;
 pub const TokenTag = tokenizer.TokenTag;
 
 pub const TopLevel = union(enum) {
@@ -47,6 +48,7 @@ pub const StdLogic = union(enum) {
 
 pub const ParserError = error{
     UnexpectedToken,
+    UnexpectedKeyword,
     ExpectedSemicolon,
     OutOfTokens,
 };
@@ -97,18 +99,45 @@ pub const Parser = struct {
         }
     }
 
+    fn consume_kw(self: *Parser, kw: Keyword) ParserError!void {
+        if (self.peek() == .keyword) {
+            const keyword = Keyword.tryFromStr(self.tokens[self.cursor]).?;
+            if (keyword == kw) {
+                self.advance();
+                return;
+            } else {
+                return ParserError.UnexpectedKeyword;
+            }
+        } else {
+            return ParserError.UnexpectedToken;
+        }
+    }
+
     fn at_end(self: *Parser) bool {
         return self.peek() == .eof;
     }
 
-    pub fn parse(self: *Parser, ast: *std.ArrayList(*const Expr)) !void {
+    pub fn parse(self: *Parser, ast: *std.ArrayList(*const TopLevel)) !void {
         while (!self.at_end()) {
             const expr = try self.statement();
             try ast.append(self.arena.allocator(), expr);
         }
     }
 
-    pub fn statement(self: *Parser) !*const Expr {
+    /// Statement FOR NOW is either
+    /// `entity` "NAME" is {ENTITY} end `entity` "NAME";
+    /// `architecture` "NAME" of "ENTITY" is {ARCHITECTURE} end `architecture` "NAME";
+    pub fn statement(self: *Parser) !*const TopLevel {
+        _ = self;
+        return ParserError.OutOfTokens;
+    }
+
+    pub fn entity(self: *Parser) !*const TopLevel {
+        _ = self;
+        return ParserError.OutOfTokens;
+    }
+
+    pub fn architecture(self: *Parser) !*const TopLevel {
         _ = self;
         return ParserError.OutOfTokens;
     }
