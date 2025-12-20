@@ -207,16 +207,31 @@ pub const Parser = struct {
 
             self.advance();
 
-            const port = IO{ .name = mapping_name, .ty = .single };
+            var port = IO{ .name = mapping_name, .ty = .single };
 
             const ty = self.peekWhole().toKeyword().?;
             switch (ty) {
-                .std_logic => {},
-                .std_logic_vector => {},
+                .std_logic => self.advance(),
+                .std_logic_vector => {
+                    self.advance();
+                    try self.consume(.open_paren);
+
+                    const top = self.peekWhole();
+                    try self.consume(.number);
+                    const top_n = try std.fmt.parseInt(u8, top.data, 10);
+
+                    try self.consumeKw(.downto);
+
+                    const bot = self.peekWhole();
+                    try self.consume(.number);
+                    const bot_n = try std.fmt.parseInt(u8, bot.data, 10);
+
+                    try self.consume(.close_paren);
+
+                    port.ty = .{ .vector = top_n - bot_n };
+                },
                 else => return ParserError.UnexpectedKeyword,
             }
-
-            self.advance();
 
             try al.append(alloc, port);
 
@@ -249,7 +264,7 @@ test "entity parse" {
         \\entity IDENT is
         \\port(
         \\ foo: in std_logic;
-        \\ bar: out std_logic);
+        \\ bar: out std_logic_vector(7 downto 0));
         \\end entity IDENT;
     ;
 
@@ -280,5 +295,5 @@ test "entity parse" {
 
     try std.testing.expectEqual(1, entity.outputs.items.len);
     try std.testing.expectEqualStrings("bar", entity.outputs.items[0].name);
-    try std.testing.expectEqual(.single, entity.outputs.items[0].ty);
+    try std.testing.expectEqual(StdLogic{ .vector = 7 }, entity.outputs.items[0].ty);
 }
