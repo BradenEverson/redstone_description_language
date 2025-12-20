@@ -165,7 +165,29 @@ pub const Parser = struct {
                 .architecture => {
                     // `architecture` "NAME" of "ENTITY" is {ARCHITECTURE} end `architecture` "NAME";
                     try self.consumeKw(.architecture);
-                    return ParserError.OutOfTokens;
+
+                    const arch_name = self.peekWhole().data;
+                    try self.consume(.ident);
+
+                    try self.consumeKw(.of);
+                    const of_entity = self.peekWhole().data;
+                    try self.consume(.ident);
+                    try self.consumeKw(.is);
+
+                    const arch = try self.architecture(alloc, arch_name, of_entity);
+                    errdefer alloc.destroy(arch);
+
+                    try self.consumeKw(.end);
+                    try self.consumeKw(.architecture);
+
+                    const end_arch_name = self.peekWhole().data;
+                    try self.consume(.ident);
+
+                    if (!std.mem.eql(u8, end_arch_name, arch_name)) return ParserError.MismatchedEntityName;
+
+                    try self.consume(.semicolon);
+
+                    return arch;
                 },
 
                 else => return ParserError.UnexpectedKeyword,
@@ -247,9 +269,12 @@ pub const Parser = struct {
         return tl;
     }
 
-    pub fn architecture(self: *Parser, alloc: std.mem.Allocator) !*const TopLevel {
+    pub fn architecture(self: *Parser, alloc: std.mem.Allocator, name: []const u8, of_entity: []const u8) !*const TopLevel {
         _ = self;
         _ = alloc;
+        _ = name;
+        _ = of_entity;
+
         return ParserError.OutOfTokens;
     }
 };
