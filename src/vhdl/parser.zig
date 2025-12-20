@@ -22,7 +22,7 @@ pub const Architecture = struct {
 
 pub const Expr = union(enum) {
     binary: struct { left: *const Expr, op: BinaryOp, right: *const Expr },
-    input: usize,
+    input: *const IO,
 };
 
 pub const BinaryOp = enum {
