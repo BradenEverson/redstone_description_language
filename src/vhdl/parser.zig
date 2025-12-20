@@ -269,4 +269,16 @@ test "entity parse" {
     defer al.deinit(a_alloc);
 
     try parser.parse(a_alloc, &al);
+
+    const entity = al.items[0].*.entity;
+
+    try std.testing.expectEqualStrings("IDENT", entity.name);
+
+    try std.testing.expectEqual(1, entity.inputs.items.len);
+    try std.testing.expectEqualStrings("foo", entity.inputs.items[0].name);
+    try std.testing.expectEqual(.single, entity.inputs.items[0].ty);
+
+    try std.testing.expectEqual(1, entity.outputs.items.len);
+    try std.testing.expectEqualStrings("bar", entity.outputs.items[0].name);
+    try std.testing.expectEqual(.single, entity.outputs.items[0].ty);
 }
