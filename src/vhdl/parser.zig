@@ -22,6 +22,7 @@ pub const Architecture = struct {
 
 pub const Expr = union(enum) {
     binary: struct { left: *const Expr, op: BinaryOp, right: *const Expr },
+    unary: struct { expr: *const Expr, op: UnaryOp },
     input: *const IO,
 };
 
@@ -29,6 +30,10 @@ pub const BinaryOp = enum {
     binary_and,
     binary_or,
     binary_xor,
+};
+
+pub const UnaryOp = enum {
+    not,
 };
 
 pub const EntityDef = struct {
