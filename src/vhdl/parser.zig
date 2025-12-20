@@ -275,6 +275,8 @@ pub const Parser = struct {
 
         const arch: Architecture = .{ .name = name, .of = of_entity, .internal_signals = .{}, .mappings = undefined };
 
+        // TODO: Before we reach begin there could be internal signal mappings we need to care about
+        // maybe this switch could be one of those cool labeled switch loop things
         switch (self.peek()) {
             .keyword => switch (self.peekWhole().toKeyword().?) {
                 .begin => {
