@@ -111,6 +111,13 @@ pub const Token = struct {
     line: usize,
     col: usize,
     data: []const u8,
+
+    pub fn toKeyword(self: *const Token) ?Keyword {
+        return switch (self.tag) {
+            .keyword => Keyword.tryFromStr(self.data),
+            else => null,
+        };
+    }
 };
 
 pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.mem.Allocator) !void {

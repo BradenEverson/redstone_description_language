@@ -16,7 +16,7 @@ pub const Architecture = struct {
     name: []const u8,
     of: []const u8,
 
-    internal_signals: []IO,
+    internal_signals: std.ArrayList(IO),
     mappings: []Expr,
 };
 
@@ -32,8 +32,10 @@ pub const BinaryOp = enum {
 };
 
 pub const EntityDef = struct {
-    inputs: []IO,
-    outputs: []IO,
+    name: []const u8,
+
+    inputs: std.ArrayList(IO),
+    outputs: std.ArrayList(IO),
 };
 
 pub const IO = struct {
@@ -51,23 +53,30 @@ pub const ParserError = error{
     UnexpectedKeyword,
     ExpectedSemicolon,
     OutOfTokens,
+    MismatchedEntityName,
 };
 
 pub const Parser = struct {
     tokens: []const Token,
     cursor: usize,
-    arena: std.heap.ArenaAllocator,
 
-    pub fn init(alloc: std.mem.Allocator, tokens: []const Token) Parser {
+    pub fn init(tokens: []const Token) Parser {
         return Parser{
-            .arena = std.heap.ArenaAllocator.init(alloc),
             .tokens = tokens,
             .cursor = 0,
         };
     }
 
-    pub fn deinit(self: *Parser) void {
-        self.arena.deinit();
+    fn peekWhole(self: *const Parser) Token {
+        if (self.cursor >= self.tokens.len) {
+            return Token{
+                .tag = .eof,
+                .data = "",
+                .col = 0,
+                .line = 0,
+            };
+        }
+        return self.tokens[self.cursor];
     }
 
     fn peek(self: *const Parser) TokenTag {
@@ -77,7 +86,7 @@ pub const Parser = struct {
         return self.tokens[self.cursor].tag;
     }
 
-    fn peek_n(self: *const Parser, n: comptime_int) TokenTag {
+    fn peekN(self: *const Parser, n: comptime_int) TokenTag {
         if (self.cursor + n >= self.tokens.len) {
             return .eof;
         }
@@ -99,9 +108,9 @@ pub const Parser = struct {
         }
     }
 
-    fn consume_kw(self: *Parser, kw: Keyword) ParserError!void {
+    fn consumeKw(self: *Parser, kw: Keyword) ParserError!void {
         if (self.peek() == .keyword) {
-            const keyword = Keyword.tryFromStr(self.tokens[self.cursor]).?;
+            const keyword = self.tokens[self.cursor].toKeyword().?;
             if (keyword == kw) {
                 self.advance();
                 return;
@@ -113,32 +122,151 @@ pub const Parser = struct {
         }
     }
 
-    fn at_end(self: *Parser) bool {
+    fn atEnd(self: *Parser) bool {
         return self.peek() == .eof;
     }
 
-    pub fn parse(self: *Parser, ast: *std.ArrayList(*const TopLevel)) !void {
-        while (!self.at_end()) {
-            const expr = try self.statement();
-            try ast.append(self.arena.allocator(), expr);
+    pub fn parse(self: *Parser, alloc: std.mem.Allocator, ast: *std.ArrayList(*const TopLevel)) !void {
+        while (!self.atEnd()) {
+            const expr = try self.statement(alloc);
+            try ast.append(alloc, expr);
         }
     }
 
     /// Statement FOR NOW is either
     /// `entity` "NAME" is {ENTITY} end `entity` "NAME";
     /// `architecture` "NAME" of "ENTITY" is {ARCHITECTURE} end `architecture` "NAME";
-    pub fn statement(self: *Parser) !*const TopLevel {
-        _ = self;
-        return ParserError.OutOfTokens;
+    pub fn statement(self: *Parser, alloc: std.mem.Allocator) !*const TopLevel {
+        switch (self.peek()) {
+            .keyword => switch (self.peekWhole().toKeyword().?) {
+                .entity => {
+                    // `entity` "NAME" is {ENTITY} end `entity` "NAME";
+                    try self.consumeKw(.entity);
+
+                    const entity_name = self.peekWhole().data;
+                    try self.consume(.ident);
+
+                    try self.consumeKw(.is);
+
+                    const en = try self.entity(alloc, entity_name);
+                    errdefer alloc.destroy(en);
+
+                    try self.consumeKw(.end);
+                    try self.consumeKw(.entity);
+
+                    const name = self.peekWhole();
+                    try self.consume(.ident);
+                    try self.consume(.semicolon);
+
+                    if (!std.mem.eql(u8, name.data, entity_name)) return ParserError.MismatchedEntityName;
+
+                    return en;
+                },
+                .architecture => {
+                    // `architecture` "NAME" of "ENTITY" is {ARCHITECTURE} end `architecture` "NAME";
+                    try self.consumeKw(.architecture);
+                    return ParserError.OutOfTokens;
+                },
+
+                else => return ParserError.UnexpectedKeyword,
+            },
+            .eof => return ParserError.OutOfTokens,
+            else => return ParserError.UnexpectedToken,
+        }
     }
 
-    pub fn entity(self: *Parser) !*const TopLevel {
-        _ = self;
-        return ParserError.OutOfTokens;
+    /// An entity description defined by
+    /// `PORT` OPEN_PAREN
+    ///     {`IDENT` COLON IN/OUT STD_LOGIC{_VECTOR(NUM DOWNTO NUM)}? {SEMICOLON}?} ..*
+    /// CLOSE_PAREN SEMICOLON
+    pub fn entity(self: *Parser, alloc: std.mem.Allocator, name: []const u8) !*const TopLevel {
+        const tl = try alloc.create(TopLevel);
+        errdefer alloc.destroy(tl);
+
+        try self.consumeKw(.port);
+        try self.consume(.open_paren);
+
+        var en = EntityDef{
+            .name = name,
+            .inputs = .{},
+            .outputs = .{},
+        };
+
+        while (self.peek() != .close_paren) {
+            const mapping_name = self.peekWhole().data;
+            try self.consume(.ident);
+            try self.consume(.colon);
+
+            const al = if (self.peekWhole().toKeyword()) |kw| switch (kw) {
+                .in => &en.inputs,
+                .out => &en.outputs,
+                else => return ParserError.UnexpectedKeyword,
+            } else {
+                return ParserError.UnexpectedToken;
+            };
+
+            self.advance();
+
+            const port = IO{ .name = mapping_name, .ty = .single };
+
+            const ty = self.peekWhole().toKeyword().?;
+            switch (ty) {
+                .std_logic => {},
+                .std_logic_vector => {},
+                else => return ParserError.UnexpectedKeyword,
+            }
+
+            self.advance();
+
+            try al.append(alloc, port);
+
+            // check for ; or ); consume ; if just
+            const end = self.peek();
+            if (end == .semicolon) self.advance();
+        }
+
+        try self.consume(.close_paren);
+        try self.consume(.semicolon);
+
+        tl.* = .{ .entity = en };
+        return tl;
     }
 
-    pub fn architecture(self: *Parser) !*const TopLevel {
+    pub fn architecture(self: *Parser, alloc: std.mem.Allocator) !*const TopLevel {
         _ = self;
+        _ = alloc;
         return ParserError.OutOfTokens;
     }
 };
+
+test "entity parse" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    const token_stream =
+        \\entity IDENT is
+        \\port(
+        \\ foo: in std_logic;
+        \\ bar: out std_logic);
+        \\end entity IDENT;
+    ;
+
+    var tokens = std.ArrayList(Token){};
+    defer tokens.deinit(alloc);
+
+    try tokenizer.tokenize(token_stream, &tokens, alloc);
+
+    var parser = Parser.init(tokens.items);
+
+    var arena = std.heap.ArenaAllocator.init(alloc);
+    defer arena.deinit();
+
+    const a_alloc = arena.allocator();
+
+    var al = std.ArrayList(*const TopLevel){};
+    defer al.deinit(a_alloc);
+
+    try parser.parse(a_alloc, &al);
+}
