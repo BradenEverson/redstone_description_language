@@ -7,7 +7,7 @@ This generated file can then be added to any Minecraft world to construct the ci
 The process of going from VHDL source to Minecraft Entity is a very involved one, requiring a parser, several intermediate representations and finally a binary file protocol implementation, the general pipeline can be followed as:
 
 ```
-[VHDL source] => [High Level Entity and Architectures] => [Gate Level Circuit] \
-                                                                                | 
-                               [NBT Entity] <= [Minecraft Block Description] <=/
+[VHDL source] => [High Level Entity and Architectures] => [Gate Level Circuit] \\
+                                                                                || 
+                               [NBT Entity] <= [Minecraft Block Description] <=//
 ```
