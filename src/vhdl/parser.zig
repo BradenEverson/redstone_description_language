@@ -297,3 +297,34 @@ test "entity parse" {
     try std.testing.expectEqualStrings("bar", entity.outputs.items[0].name);
     try std.testing.expectEqual(StdLogic{ .vector = 7 }, entity.outputs.items[0].ty);
 }
+
+test "parse architecture" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
+
+    const token_stream =
+        \\architecture LOGIC of IDENT is
+        \\begin
+        \\  bar <= not foo;
+        \\end architecture LOGIC;
+    ;
+
+    var tokens = std.ArrayList(Token){};
+    defer tokens.deinit(alloc);
+
+    try tokenizer.tokenize(token_stream, &tokens, alloc);
+
+    var parser = Parser.init(tokens.items);
+
+    var arena = std.heap.ArenaAllocator.init(alloc);
+    defer arena.deinit();
+
+    const a_alloc = arena.allocator();
+
+    var al = std.ArrayList(*const TopLevel){};
+    defer al.deinit(a_alloc);
+
+    try parser.parse(a_alloc, &al);
+}
