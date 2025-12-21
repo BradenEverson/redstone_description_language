@@ -21,10 +21,15 @@ pub const Block = union(BlockType) {
     repeater: u8,
 };
 
+const Point = struct { x: usize = 0, y: usize = 0, z: usize = 0 };
+
 pub const CircuitEntity = struct {
     width: usize,
     height: usize,
     length: usize,
+
+    inputs: []Point = &[0]Point{},
+    outputs: []Point = &[0]Point{},
 
     blocks: []Block,
 
@@ -47,16 +52,21 @@ pub const CircuitEntity = struct {
         alloc.free(self.blocks);
     }
 
-    pub fn toNbt(self: *const CircuitEntity, alloc: std.mem.Allocator) !NbtNode {
+    pub fn combine(self: *CircuitEntity, other: *CircuitEntity) !CircuitEntity {
         _ = self;
-        _ = alloc;
-
-        return .{ .name = null, .ty = .end };
+        _ = other;
     }
 
     pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
         _ = self;
         _ = alloc;
         _ = circuit;
+    }
+
+    pub fn toNbt(self: *const CircuitEntity, alloc: std.mem.Allocator) !NbtNode {
+        _ = self;
+        _ = alloc;
+
+        return .{ .name = null, .ty = .end };
     }
 };
