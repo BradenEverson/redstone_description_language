@@ -59,7 +59,7 @@ pub const CircuitEntity = struct {
         self.adjustSize(output);
     }
 
-    fn setBlock(self: *Circuit, alloc: std.mem.Allocator, block: Block) !void {
+    fn setBlock(self: *CircuitEntity, alloc: std.mem.Allocator, block: Block) !void {
         try self.blocks.append(alloc, block);
         self.adjustSize(block.loc);
     }
@@ -71,8 +71,7 @@ pub const CircuitEntity = struct {
             .metadata = 0,
         };
 
-        try self.blocks.append(alloc, to_place);
-        self.adjustSize(at);
+        try self.setBlock(alloc, to_place);
     }
 
     /// Connects an output of other to an input of self, modifying self. You can safely destroy other after
