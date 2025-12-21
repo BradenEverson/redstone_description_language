@@ -3,6 +3,7 @@
 const std = @import("std");
 
 const Circuit = @import("dl.zig").Circuit;
+const nbt = @import("nbt.zig");
 const NbtNode = @import("nbt/node.zig").NbtNode;
 
 pub const BlockType = enum(u8) {
@@ -92,9 +93,57 @@ pub const CircuitEntity = struct {
     }
 
     pub fn toNbt(self: *const CircuitEntity, alloc: std.mem.Allocator) !NbtNode {
-        _ = self;
-        _ = alloc;
+        const root = try nbt.compound(alloc, "");
+        errdefer {
+            root.deinit(alloc);
+            alloc.destroy(root);
+        }
 
-        return .{ .name = null, .ty = .end };
+        const size_list = try alloc.alloc(*NbtNode, 3);
+
+        size_list[0] = try nbt.int(alloc, null, self.width);
+        size_list[1] = try nbt.int(alloc, null, self.height);
+        size_list[2] = try nbt.int(alloc, null, self.length);
+
+        const list = try nbt.list(alloc, "size", size_list);
+
+        try nbt.add(alloc, root, list);
+
+        // TODO: Create palette based only on blocks used
+        const palette_list = try alloc.alloc(*NbtNode, 1);
+
+        const air_tag = try nbt.compound(alloc, null);
+        const tag_name = try nbt.string(alloc, "Name", "minecraft:redstone_dust");
+        try nbt.add(alloc, air_tag, tag_name);
+
+        palette_list[0] = air_tag;
+        const p_list = try nbt.list(alloc, "palette", palette_list);
+
+        try nbt.add(alloc, root, try list(alloc, "palette", p_list));
+
+        const total_blocks = self.blocks.items.len;
+        const blocks_list = try alloc.alloc(*NbtNode, total_blocks);
+
+        var idx: usize = 0;
+        for (self.blocks.items) |block| {
+            const b_entry = try nbt.compound(alloc, null);
+
+            const pos_list = try alloc.alloc(*NbtNode, 3);
+            pos_list[0] = try nbt.int(alloc, null, @intCast(block.loc.x));
+            pos_list[1] = try nbt.int(alloc, null, @intCast(block.loc.y));
+            pos_list[2] = try nbt.int(alloc, null, @intCast(block.loc.z));
+            try nbt.add(alloc, b_entry, try list(alloc, "pos", pos_list));
+
+            // TODO: Get the state value from the palette
+            const state: u32 = 1;
+
+            try nbt.add(alloc, b_entry, try nbt.int(alloc, "state", state));
+
+            blocks_list[idx] = b_entry;
+            idx += 1;
+        }
+
+        try nbt.add(alloc, root, try list(alloc, "blocks", blocks_list));
+        return root;
     }
 };

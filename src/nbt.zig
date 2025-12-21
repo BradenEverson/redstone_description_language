@@ -35,29 +35,29 @@ pub fn loadUnzippedBytes(alloc: std.mem.Allocator, unzipped: []const u8) !*NbtNo
     return result;
 }
 
-fn create(alloc: std.mem.Allocator, name: ?[]const u8, ty: NbtType) !*NbtNode {
+pub fn create(alloc: std.mem.Allocator, name: ?[]const u8, ty: NbtType) !*NbtNode {
     const n = try alloc.create(NbtNode);
     n.* = .{ .name = name, .ty = ty };
     return n;
 }
 
-fn compound(alloc: std.mem.Allocator, name: ?[]const u8) !*NbtNode {
+pub fn compound(alloc: std.mem.Allocator, name: ?[]const u8) !*NbtNode {
     return create(alloc, name, .{ .compound = .{} });
 }
 
-fn add(alloc: std.mem.Allocator, comp: *NbtNode, child: *NbtNode) !void {
+pub fn add(alloc: std.mem.Allocator, comp: *NbtNode, child: *NbtNode) !void {
     try comp.ty.compound.append(alloc, child);
 }
 
-fn int(alloc: std.mem.Allocator, name: ?[]const u8, value: u32) !*NbtNode {
+pub fn int(alloc: std.mem.Allocator, name: ?[]const u8, value: u32) !*NbtNode {
     return create(alloc, name, .{ .int = value });
 }
 
-fn string(alloc: std.mem.Allocator, name: ?[]const u8, value: []const u8) !*NbtNode {
+pub fn string(alloc: std.mem.Allocator, name: ?[]const u8, value: []const u8) !*NbtNode {
     return create(alloc, name, .{ .string = value });
 }
 
-fn list(alloc: std.mem.Allocator, name: ?[]const u8, items: []*NbtNode) !*NbtNode {
+pub fn list(alloc: std.mem.Allocator, name: ?[]const u8, items: []*NbtNode) !*NbtNode {
     return create(alloc, name, .{ .list = items });
 }
 
