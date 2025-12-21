@@ -82,26 +82,28 @@ pub fn createDiamondStructure(alloc: std.mem.Allocator) !*NbtNode {
 
     try add(alloc, root, try list(alloc, "palette", palette_list));
 
-    const total_blocks = 3 * 2 * 2;
+    const total_blocks = 1;
     const blocks_list = try alloc.alloc(*NbtNode, total_blocks);
 
     var idx: usize = 0;
     for (0..3) |x| {
         for (0..2) |y| {
             for (0..2) |z| {
-                const b_entry = try compound(alloc, null);
+                if (x == 0 and y == 0 and z == 0) {
+                    const b_entry = try compound(alloc, null);
 
-                const pos_list = try alloc.alloc(*NbtNode, 3);
-                pos_list[0] = try int(alloc, null, @intCast(x));
-                pos_list[1] = try int(alloc, null, @intCast(y));
-                pos_list[2] = try int(alloc, null, @intCast(z));
-                try add(alloc, b_entry, try list(alloc, "pos", pos_list));
+                    const pos_list = try alloc.alloc(*NbtNode, 3);
+                    pos_list[0] = try int(alloc, null, @intCast(x));
+                    pos_list[1] = try int(alloc, null, @intCast(y));
+                    pos_list[2] = try int(alloc, null, @intCast(z));
+                    try add(alloc, b_entry, try list(alloc, "pos", pos_list));
 
-                const state: u32 = if (x == 1 and y == 1 and z == 1) 1 else 0;
-                try add(alloc, b_entry, try int(alloc, "state", state));
+                    const state: u32 = 1;
+                    try add(alloc, b_entry, try int(alloc, "state", state));
 
-                blocks_list[idx] = b_entry;
-                idx += 1;
+                    blocks_list[idx] = b_entry;
+                    idx += 1;
+                }
             }
         }
     }
