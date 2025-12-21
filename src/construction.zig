@@ -12,6 +12,16 @@ pub const BlockType = enum(u8) {
     redstone_torch,
     comparator,
     repeater,
+
+    pub fn toStr(self: BlockType) []const u8 {
+        return switch (self) {
+            .air => "minecraft:air",
+            .redstone_dust => "minecraft:redstone_dust",
+            .redstone_torch => "minecraft:redstone_torch",
+            .comparator => "minecraft:comparator",
+            .repeater => "minecraft:repeater",
+        };
+    }
 };
 
 const Point = struct { x: usize = 0, y: usize = 0, z: usize = 0 };
@@ -113,7 +123,7 @@ pub const CircuitEntity = struct {
         const palette_list = try alloc.alloc(*NbtNode, 1);
 
         const air_tag = try nbt.compound(alloc, null);
-        const tag_name = try nbt.string(alloc, "Name", "minecraft:redstone_dust");
+        const tag_name = try nbt.string(alloc, "Name", BlockType.redstone_dust.toStr());
         try nbt.add(alloc, air_tag, tag_name);
 
         palette_list[0] = air_tag;
@@ -147,3 +157,5 @@ pub const CircuitEntity = struct {
         return root;
     }
 };
+
+test "basic construction" {}
