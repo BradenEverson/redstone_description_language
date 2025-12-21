@@ -13,47 +13,73 @@ pub const BlockType = enum(u8) {
     repeater,
 };
 
-pub const Block = union(BlockType) {
-    air,
-    redstone_dust,
-    redstone_torch,
-    comparator: u8,
-    repeater: u8,
-};
-
 const Point = struct { x: usize = 0, y: usize = 0, z: usize = 0 };
+
+const Block = struct {
+    ty: BlockType,
+    loc: Point,
+    metadata: u8,
+};
 
 pub const CircuitEntity = struct {
     width: usize,
     height: usize,
     length: usize,
 
-    inputs: []Point = &[0]Point{},
-    outputs: []Point = &[0]Point{},
+    inputs: std.ArrayList(Point) = .{},
+    outputs: std.ArrayList(Point) = .{},
 
-    blocks: []Block,
+    blocks: std.ArrayList(Block) = .{},
 
-    pub fn init(alloc: std.mem.Allocator, w: usize, h: usize, l: usize) !CircuitEntity {
-        const buf = try alloc.alloc(Block, w * h * l);
-        for (buf) |*item| {
-            item.* = .air;
+    inline fn adjustSize(self: *CircuitEntity, point: Point) void {
+        if (point.x >= self.width) {
+            self.width = point.x + 1;
         }
 
-        return CircuitEntity{
-            .width = w,
-            .height = h,
-            .length = l,
+        if (point.y >= self.height) {
+            self.height = point.y + 1;
+        }
 
-            .blocks = buf,
-        };
+        if (point.z >= self.length) {
+            self.length = point.z + 1;
+        }
     }
 
     pub fn deinit(self: *CircuitEntity, alloc: std.mem.Allocator) void {
         alloc.free(self.blocks);
     }
 
-    /// Connects an output of other to an input of self
-    pub fn combine(self: *CircuitEntity, other: *CircuitEntity, to_self_input: usize, from_other_output: usize) !CircuitEntity {
+    pub fn setInput(self: *CircuitEntity, alloc: std.mem.Allocator, input: Point) !void {
+        try self.inputs.append(alloc, input);
+        self.adjustSize(input);
+    }
+
+    pub fn setOutput(self: *CircuitEntity, alloc: std.mem.Allocator, output: Point) !void {
+        try self.outputs.append(alloc, output);
+        self.adjustSize(output);
+    }
+
+    fn setBlock(self: *Circuit, alloc: std.mem.Allocator, block: Block) !void {
+        try self.blocks.append(alloc, block);
+        self.adjustSize(block.loc);
+    }
+
+    fn place(self: *CircuitEntity, alloc: std.mem.Allocator, block: BlockType, at: Point) !void {
+        const to_place = Block{
+            .loc = at,
+            .ty = block,
+            .metadata = 0,
+        };
+
+        try self.blocks.append(alloc, to_place);
+        self.adjustSize(at);
+    }
+
+    /// Connects an output of other to an input of self, modifying self. You can safely destroy other after
+    /// this operation is complete
+    pub fn combine(self: *CircuitEntity, other: *CircuitEntity, to_self_input: usize, from_other_output: usize) !void {
+        // TODO: Shift the width and all points in self over by other's dimensions, place other's output at
+        // the location of self's input
         _ = self;
         _ = other;
         _ = to_self_input;
