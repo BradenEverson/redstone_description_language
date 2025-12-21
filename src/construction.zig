@@ -52,9 +52,12 @@ pub const CircuitEntity = struct {
         alloc.free(self.blocks);
     }
 
-    pub fn combine(self: *CircuitEntity, other: *CircuitEntity) !CircuitEntity {
+    /// Connects an output of other to an input of self
+    pub fn combine(self: *CircuitEntity, other: *CircuitEntity, to_self_input: usize, from_other_output: usize) !CircuitEntity {
         _ = self;
         _ = other;
+        _ = to_self_input;
+        _ = from_other_output;
     }
 
     pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
