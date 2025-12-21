@@ -240,6 +240,7 @@ pub const NbtNode = struct {
                 for (c.items) |ci| {
                     try ci.toBytes(alloc, buf, true, true);
                 }
+                try buf.append(alloc, 0x00);
             },
         }
     }
