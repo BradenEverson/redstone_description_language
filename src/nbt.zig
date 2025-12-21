@@ -33,3 +33,9 @@ pub fn loadUnzippedBytes(alloc: std.mem.Allocator, unzipped: []const u8) !*NbtNo
     const result, _ = try NbtNode.parseSingular(alloc, unzipped, true, null);
     return result;
 }
+
+pub fn createNode(alloc: std.mem.Allocator, name: ?[]const u8, ty: node.NbtType) !*NbtNode {
+    const n = try alloc.create(NbtNode);
+    n.* = .{ .name = name, .ty = ty };
+    return n;
+}
