@@ -592,6 +592,17 @@ pub const CircuitEntity = struct {
             }
         }
 
+        var curr = other.outputs.items[other_output_idx];
+        const end = self.inputs.items[self_input_idx];
+
+        while (!std.meta.eql(curr, end)) {
+            try self.setBlock(alloc, .{
+                .ty = .redstone_wire,
+                .loc = curr,
+            });
+            curr.z += 1;
+        }
+
         _ = self.inputs.orderedRemove(self_input_idx);
     }
 
