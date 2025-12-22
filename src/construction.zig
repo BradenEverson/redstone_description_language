@@ -6,36 +6,44 @@ const Circuit = @import("dl.zig").Circuit;
 const nbt = @import("nbt.zig");
 const NbtNode = @import("nbt/node.zig").NbtNode;
 
-pub const BlockType = enum(u8) {
-    air,
-    redstone_dust,
-    redstone_torch,
-    comparator,
-    repeater,
+pub const BlockType = enum(u32) {
+    redstone_dust = 0,
+    redstone_torch = 1,
+    comparator = 2,
+    repeater = 3,
 
     pub fn toStr(self: BlockType) []const u8 {
         return switch (self) {
-            .air => "minecraft:air",
-            .redstone_dust => "minecraft:redstone_dust",
+            .redstone_dust => "minecraft:redstone_wire",
             .redstone_torch => "minecraft:redstone_torch",
             .comparator => "minecraft:comparator",
             .repeater => "minecraft:repeater",
         };
     }
+
+    pub fn toNbt(self: BlockType, alloc: std.mem.Allocator) !*NbtNode {
+        const tag = try nbt.compound(alloc, null);
+        errdefer tag.deinit(alloc);
+
+        const tag_name = try nbt.string(alloc, "Name", self.toStr());
+        try nbt.add(alloc, tag, tag_name);
+
+        return tag;
+    }
 };
 
-const Point = struct { x: usize = 0, y: usize = 0, z: usize = 0 };
+pub const Point = struct { x: u32 = 0, y: u32 = 0, z: u32 = 0 };
 
-const Block = struct {
+pub const Block = struct {
     ty: BlockType,
     loc: Point,
     metadata: u8,
 };
 
 pub const CircuitEntity = struct {
-    width: usize,
-    height: usize,
-    length: usize,
+    width: u32 = 0,
+    height: u32 = 0,
+    length: u32 = 0,
 
     inputs: std.ArrayList(Point) = .{},
     outputs: std.ArrayList(Point) = .{},
@@ -57,7 +65,7 @@ pub const CircuitEntity = struct {
     }
 
     pub fn deinit(self: *CircuitEntity, alloc: std.mem.Allocator) void {
-        alloc.free(self.blocks);
+        self.blocks.deinit(alloc);
     }
 
     pub fn setInput(self: *CircuitEntity, alloc: std.mem.Allocator, input: Point) !void {
@@ -70,12 +78,12 @@ pub const CircuitEntity = struct {
         self.adjustSize(output);
     }
 
-    fn setBlock(self: *CircuitEntity, alloc: std.mem.Allocator, block: Block) !void {
+    pub fn setBlock(self: *CircuitEntity, alloc: std.mem.Allocator, block: Block) !void {
         try self.blocks.append(alloc, block);
         self.adjustSize(block.loc);
     }
 
-    fn place(self: *CircuitEntity, alloc: std.mem.Allocator, block: BlockType, at: Point) !void {
+    pub fn place(self: *CircuitEntity, alloc: std.mem.Allocator, block: BlockType, at: Point) !void {
         const to_place = Block{
             .loc = at,
             .ty = block,
@@ -102,7 +110,7 @@ pub const CircuitEntity = struct {
         _ = circuit;
     }
 
-    pub fn toNbt(self: *const CircuitEntity, alloc: std.mem.Allocator) !NbtNode {
+    pub fn toNbt(self: *const CircuitEntity, alloc: std.mem.Allocator) !*NbtNode {
         const root = try nbt.compound(alloc, "");
         errdefer {
             root.deinit(alloc);
@@ -119,17 +127,21 @@ pub const CircuitEntity = struct {
 
         try nbt.add(alloc, root, list);
 
-        // TODO: Create palette based only on blocks used
-        const palette_list = try alloc.alloc(*NbtNode, 1);
+        const variants = @typeInfo(BlockType).@"enum".fields;
+        const palette_list = try alloc.alloc(*NbtNode, variants.len);
 
-        const air_tag = try nbt.compound(alloc, null);
-        const tag_name = try nbt.string(alloc, "Name", BlockType.redstone_dust.toStr());
-        try nbt.add(alloc, air_tag, tag_name);
+        inline for (variants) |variant| {
+            const val = @as(usize, variant.value);
+            const e: BlockType = @enumFromInt(val);
 
-        palette_list[0] = air_tag;
+            std.debug.print("{any}\n", .{e});
+
+            const tag = try e.toNbt(alloc);
+            palette_list[variant.value] = tag;
+        }
         const p_list = try nbt.list(alloc, "palette", palette_list);
 
-        try nbt.add(alloc, root, try list(alloc, "palette", p_list));
+        try nbt.add(alloc, root, p_list);
 
         const total_blocks = self.blocks.items.len;
         const blocks_list = try alloc.alloc(*NbtNode, total_blocks);
@@ -142,10 +154,9 @@ pub const CircuitEntity = struct {
             pos_list[0] = try nbt.int(alloc, null, @intCast(block.loc.x));
             pos_list[1] = try nbt.int(alloc, null, @intCast(block.loc.y));
             pos_list[2] = try nbt.int(alloc, null, @intCast(block.loc.z));
-            try nbt.add(alloc, b_entry, try list(alloc, "pos", pos_list));
+            try nbt.add(alloc, b_entry, try nbt.list(alloc, "pos", pos_list));
 
-            // TODO: Get the state value from the palette
-            const state: u32 = 1;
+            const state: u32 = @intFromEnum(block.ty);
 
             try nbt.add(alloc, b_entry, try nbt.int(alloc, "state", state));
 
@@ -153,7 +164,7 @@ pub const CircuitEntity = struct {
             idx += 1;
         }
 
-        try nbt.add(alloc, root, try list(alloc, "blocks", blocks_list));
+        try nbt.add(alloc, root, try nbt.list(alloc, "blocks", blocks_list));
         return root;
     }
 };
