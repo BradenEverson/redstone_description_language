@@ -20,26 +20,8 @@ pub fn main() !void {
 
     const a_alloc = arena.allocator();
 
-    var area = try CircuitEntity.construct_or(alloc);
+    var area = try CircuitEntity.constructOrN(alloc, 5);
     defer area.deinit(alloc);
-
-    var child = try CircuitEntity.construct_or(alloc);
-    defer child.deinit(alloc);
-
-    var child1 = try CircuitEntity.construct_and(alloc);
-    defer child1.deinit(alloc);
-
-    var child2 = try CircuitEntity.construct_and(alloc);
-    defer child2.deinit(alloc);
-
-    var child3 = try CircuitEntity.construct_and(alloc);
-    defer child3.deinit(alloc);
-
-    try child.combine(alloc, child1, 0, 0);
-    try child.combine(alloc, child2, 0, 0);
-
-    try area.combine(alloc, child, 0, 0);
-    try area.combine(alloc, child3, 0, 0);
 
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
@@ -48,5 +30,5 @@ pub fn main() !void {
 
     try serialized.toBytes(alloc, &al, true, true);
 
-    try nbt.zipNbt("cout.nbt", al.items);
+    try nbt.zipNbt("or5.nbt", al.items);
 }

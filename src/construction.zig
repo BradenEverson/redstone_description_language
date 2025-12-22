@@ -164,7 +164,7 @@ pub const CircuitEntity = struct {
         self.adjustSize(block.loc);
     }
 
-    pub fn construct_xor(alloc: std.mem.Allocator) !CircuitEntity {
+    pub fn constructXor(alloc: std.mem.Allocator) !CircuitEntity {
         var area = CircuitEntity{};
 
         try area.setBlock(alloc, Block{
@@ -301,47 +301,33 @@ pub const CircuitEntity = struct {
         return area;
     }
 
-    pub fn construct_or(alloc: std.mem.Allocator) !CircuitEntity {
+    pub fn constructOrN(alloc: std.mem.Allocator, n: u32) !CircuitEntity {
         var area = CircuitEntity{};
 
-        try area.setBlock(alloc, Block{
-            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
-            .loc = .{
-                .x = 0,
-                .y = 0,
-                .z = 0,
-            },
-        });
+        for (0..n) |i| {
+            const x: u32 = @truncate(i);
+            try area.setBlock(alloc, Block{
+                .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+                .loc = .{
+                    .x = x,
+                    .y = 0,
+                    .z = 0,
+                },
+            });
+            try area.setBlock(alloc, Block{
+                .ty = .redstone_wire,
+                .loc = .{
+                    .x = x,
+                    .y = 0,
+                    .z = 1,
+                },
+            });
+
+            try area.setInput(alloc, .{ .x = x, .y = 0, .z = 0 });
+        }
 
         try area.setBlock(alloc, Block{
             .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
-            .loc = .{
-                .x = 1,
-                .y = 0,
-                .z = 0,
-            },
-        });
-
-        try area.setBlock(alloc, Block{
-            .ty = .redstone_wire,
-            .loc = .{
-                .x = 1,
-                .y = 0,
-                .z = 1,
-            },
-        });
-
-        try area.setBlock(alloc, Block{
-            .ty = .redstone_wire,
-            .loc = .{
-                .x = 0,
-                .y = 0,
-                .z = 1,
-            },
-        });
-
-        try area.setBlock(alloc, Block{
-            .ty = .redstone_wire,
             .loc = .{
                 .x = 0,
                 .y = 0,
@@ -349,15 +335,16 @@ pub const CircuitEntity = struct {
             },
         });
 
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-        try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
-
         try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 3 });
 
         return area;
     }
 
-    pub fn construct_and(alloc: std.mem.Allocator) !CircuitEntity {
+    pub fn constructOr(alloc: std.mem.Allocator) !CircuitEntity {
+        return constructOrN(alloc, 2);
+    }
+
+    pub fn constructAnd(alloc: std.mem.Allocator) !CircuitEntity {
         var area = CircuitEntity{};
 
         try area.setBlock(alloc, Block{
@@ -440,7 +427,7 @@ pub const CircuitEntity = struct {
         return area;
     }
 
-    pub fn construct_not(alloc: std.mem.Allocator) !CircuitEntity {
+    pub fn constructNot(alloc: std.mem.Allocator) !CircuitEntity {
         var area = CircuitEntity{};
 
         try area.setBlock(alloc, Block{
