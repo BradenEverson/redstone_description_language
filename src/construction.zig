@@ -164,46 +164,58 @@ pub const CircuitEntity = struct {
         self.adjustSize(block.loc);
     }
 
-    pub fn construct_xor(alloc: std.mem.Allocator) !CircuitEntity {
-        var area = CircuitEntity{};
-
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-
-        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-
-        return area;
-    }
-
-    pub fn construct_nor(alloc: std.mem.Allocator) !CircuitEntity {
-        var area = CircuitEntity{};
-
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-
-        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-
-        return area;
-    }
-
     pub fn construct_or(alloc: std.mem.Allocator) !CircuitEntity {
         var area = CircuitEntity{};
 
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 2,
+            },
+        });
+
         try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
 
-        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-
-        return area;
-    }
-
-    pub fn construct_nand(alloc: std.mem.Allocator) !CircuitEntity {
-        var area = CircuitEntity{};
-
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-
-        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 2 });
 
         return area;
     }
