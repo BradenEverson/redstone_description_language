@@ -34,8 +34,7 @@ pub fn main() void {
             std.process.exit(1);
         };
 
-        var entity = construction.CircuitEntity{};
-        entity.translateToEntity(alloc, circuit) catch @panic("Failed to translate");
+        const entity = construction.CircuitEntity.translateToEntity(alloc, circuit) catch @panic("Failed to translate");
         const nbt_ir = entity.toNbt(nbt_arena) catch @panic("Failed to create NBT IR");
 
         var bytes = std.ArrayList(u8){};

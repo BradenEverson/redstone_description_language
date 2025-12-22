@@ -2,7 +2,10 @@
 
 const std = @import("std");
 
-const Circuit = @import("dl.zig").Circuit;
+const dl = @import("dl.zig");
+const Circuit = dl.Circuit;
+const Gate = dl.Gate;
+
 const nbt = @import("nbt.zig");
 const NbtNode = @import("nbt/node.zig").NbtNode;
 
@@ -373,8 +376,27 @@ pub const CircuitEntity = struct {
         return area;
     }
 
+    pub fn constructInput(alloc: std.mem.Allocator) !CircuitEntity {
+        var area = CircuitEntity{};
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 1 });
+
+        return area;
+    }
+
     pub fn constructOr(alloc: std.mem.Allocator) !CircuitEntity {
-        return constructOrN(alloc, 2);
+        return constructOrN(alloc, 2, 1);
     }
 
     pub fn constructAnd(alloc: std.mem.Allocator) !CircuitEntity {
@@ -693,9 +715,89 @@ pub const CircuitEntity = struct {
         return root;
     }
 
-    pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
-        _ = self;
-        _ = alloc;
-        _ = circuit;
+    fn translateGate(alloc: std.mem.Allocator, gate: Gate, circuit: Circuit) !CircuitEntity {
+        var result: CircuitEntity = undefined;
+        switch (gate) {
+            .input => |_| {
+                result = try CircuitEntity.constructInput(alloc);
+            },
+            .and_gate => |binary| {
+                var parent = try CircuitEntity.constructAnd(alloc);
+
+                const left = circuit.gates.items[binary.left.id];
+                const right = circuit.gates.items[binary.right.id];
+
+                var l_child = try CircuitEntity.translateGate(alloc, left, circuit);
+                defer l_child.deinit(alloc);
+
+                var r_child = try CircuitEntity.translateGate(alloc, right, circuit);
+                defer r_child.deinit(alloc);
+
+                try parent.connect(alloc, &l_child, 0, 0);
+                try parent.connect(alloc, &r_child, 0, 0);
+
+                result = parent;
+            },
+            .or_gate => |binary| {
+                var parent = try CircuitEntity.constructOr(alloc);
+                const left = circuit.gates.items[binary.left.id];
+                const right = circuit.gates.items[binary.right.id];
+
+                var l_child = try CircuitEntity.translateGate(alloc, left, circuit);
+                defer l_child.deinit(alloc);
+
+                var r_child = try CircuitEntity.translateGate(alloc, right, circuit);
+                defer r_child.deinit(alloc);
+
+                try parent.connect(alloc, &l_child, 0, 0);
+                try parent.connect(alloc, &r_child, 0, 0);
+
+                result = parent;
+            },
+            .xor_gate => |binary| {
+                var parent = try CircuitEntity.constructXor(alloc);
+                const left = circuit.gates.items[binary.left.id];
+                const right = circuit.gates.items[binary.right.id];
+
+                var l_child = try CircuitEntity.translateGate(alloc, left, circuit);
+                defer l_child.deinit(alloc);
+
+                var r_child = try CircuitEntity.translateGate(alloc, right, circuit);
+                defer r_child.deinit(alloc);
+
+                try parent.connect(alloc, &l_child, 0, 0);
+                try parent.connect(alloc, &r_child, 0, 0);
+
+                result = parent;
+            },
+            .not_gate => |unary| {
+                var parent = try CircuitEntity.constructNot(alloc);
+                const val = circuit.gates.items[unary.val.id];
+
+                var child = try CircuitEntity.translateGate(alloc, val, circuit);
+                defer child.deinit(alloc);
+
+                try parent.connect(alloc, &child, 0, 0);
+
+                result = parent;
+            },
+            else => @panic("TODO"),
+        }
+
+        return result;
+    }
+
+    pub fn translateToEntity(alloc: std.mem.Allocator, circuit: Circuit) !CircuitEntity {
+        var result: CircuitEntity = .{};
+
+        for (circuit.outputs.items) |output| {
+            const target = circuit.gates.items[output];
+            var generated = try CircuitEntity.translateGate(alloc, target, circuit);
+            defer generated.deinit(alloc);
+
+            try result.combine(alloc, &generated);
+        }
+
+        return result;
     }
 };
