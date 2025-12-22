@@ -164,6 +164,60 @@ pub const CircuitEntity = struct {
         self.adjustSize(block.loc);
     }
 
+    pub fn not(alloc: std.mem.Allocator) !CircuitEntity {
+        var area = CircuitEntity{};
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_torch,
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .comparator = .{ .facing = .north, .mode = .subtract } },
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 2,
+            },
+        });
+
+        try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 2 });
+
+        return area;
+    }
+
     /// Connects an output of other to an input of self, modifying self. You can safely destroy other after
     /// this operation is complete
     pub fn combine(self: *CircuitEntity, other: *CircuitEntity, to_self_input: usize, from_other_output: usize) !void {

@@ -20,56 +20,8 @@ pub fn main() !void {
 
     const a_alloc = arena.allocator();
 
-    var area = CircuitEntity{};
+    var area = try CircuitEntity.not(alloc);
     defer area.deinit(alloc);
-
-    try area.setBlock(alloc, Block{
-        .ty = .redstone_torch,
-        .loc = .{
-            .x = 0,
-            .y = 0,
-            .z = 0,
-        },
-    });
-
-    try area.setBlock(alloc, Block{
-        .ty = .{ .comparator = .{ .facing = .north, .mode = .subtract } },
-        .loc = .{
-            .x = 0,
-            .y = 0,
-            .z = 1,
-        },
-    });
-
-    try area.setBlock(alloc, Block{
-        .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
-        .loc = .{
-            .x = 1,
-            .y = 0,
-            .z = 0,
-        },
-    });
-
-    try area.setBlock(alloc, Block{
-        .ty = .redstone_wire,
-        .loc = .{
-            .x = 1,
-            .y = 0,
-            .z = 1,
-        },
-    });
-
-    try area.setBlock(alloc, Block{
-        .ty = .redstone_wire,
-        .loc = .{
-            .x = 0,
-            .y = 0,
-            .z = 2,
-        },
-    });
-
-    try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
-    try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 2 });
 
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
