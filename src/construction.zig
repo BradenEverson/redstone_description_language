@@ -480,7 +480,7 @@ pub const CircuitEntity = struct {
         });
 
         try area.setBlock(alloc, Block{
-            .ty = .redstone_wire,
+            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
             .loc = .{
                 .x = 0,
                 .y = 0,
@@ -505,8 +505,6 @@ pub const CircuitEntity = struct {
     ) !void {
         const self_in = self.inputs.items[self_input_idx];
         const other_out = other.outputs.items[other_output_idx];
-
-        _ = self.inputs.orderedRemove(self_input_idx);
 
         const off_x: i64 = @as(i64, self_in.x) - @as(i64, other_out.x);
         const off_y: i64 = @as(i64, self_in.y) - @as(i64, other_out.y);
@@ -556,6 +554,8 @@ pub const CircuitEntity = struct {
                 .z = in.z + final_off_z,
             });
         }
+
+        _ = self.inputs.orderedRemove(self_input_idx);
     }
 
     pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
