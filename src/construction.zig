@@ -508,6 +508,28 @@ pub const CircuitEntity = struct {
         return area;
     }
 
+    pub fn shift(self: *CircuitEntity, alloc: std.mem.Allocator, dx: u32, dy: u32, dz: u32) !void {
+        var placeholder = std.ArrayList(Block){};
+
+        var blocks = self.blocks.valueIterator();
+        while (blocks.next()) |block| {
+            var new = block.*;
+            new.loc.x += dx;
+            new.loc.y += dy;
+            new.loc.z += dz;
+
+            try placeholder.append(alloc, new);
+        }
+
+        self.blocks.deinit(alloc);
+        self.blocks = .{};
+
+        for (placeholder.items) |insert| {
+            try self.setBlock(alloc, insert);
+        }
+        placeholder.deinit(alloc);
+    }
+
     /// Connects an output of other to an input of self, modifying self. You can safely destroy other after
     /// this operation is complete
     pub fn combine(
@@ -578,6 +600,16 @@ pub const CircuitEntity = struct {
         _ = self;
         _ = alloc;
         _ = circuit;
+    }
+
+    /// Checks if a merge would result in any collisions
+    fn collision(self: *const CircuitEntity, other: *const CircuitEntity) bool {
+        var points = other.blocks.valueIterator();
+        while (points.next()) |p| {
+            if (self.blocks.contains(p)) return true;
+        }
+
+        return false;
     }
 
     pub fn toNbt(self: *const CircuitEntity, alloc: std.mem.Allocator) !*NbtNode {
