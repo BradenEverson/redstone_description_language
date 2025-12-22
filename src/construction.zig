@@ -223,10 +223,82 @@ pub const CircuitEntity = struct {
     pub fn construct_and(alloc: std.mem.Allocator) !CircuitEntity {
         var area = CircuitEntity{};
 
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 0,
+            },
+        });
 
-        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_torch,
+            .loc = .{
+                .x = 2,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
+            .loc = .{
+                .x = 3,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_torch,
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .comparator = .{ .facing = .west, .mode = .subtract } },
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .comparator = .{ .facing = .north, .mode = .subtract } },
+            .loc = .{
+                .x = 2,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .comparator = .{ .facing = .east, .mode = .subtract } },
+            .loc = .{
+                .x = 3,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_torch,
+            .loc = .{
+                .x = 4,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = 3, .y = 0, .z = 0 });
+
+        try area.setOutput(alloc, .{ .x = 2, .y = 0, .z = 1 });
 
         return area;
     }

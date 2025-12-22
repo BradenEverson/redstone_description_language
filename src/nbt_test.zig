@@ -20,7 +20,7 @@ pub fn main() !void {
 
     const a_alloc = arena.allocator();
 
-    var area = try CircuitEntity.construct_or(alloc);
+    var area = try CircuitEntity.construct_and(alloc);
     defer area.deinit(alloc);
 
     var al = std.ArrayList(u8){};
@@ -30,5 +30,5 @@ pub fn main() !void {
 
     try serialized.toBytes(alloc, &al, true, true);
 
-    try nbt.zipNbt("or.nbt", al.items);
+    try nbt.zipNbt("and.nbt", al.items);
 }
