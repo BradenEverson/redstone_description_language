@@ -24,7 +24,7 @@ pub fn main() !void {
     defer area.deinit(alloc);
 
     try area.setBlock(alloc, Block{
-        .ty = .redstone_dust,
+        .ty = .redstone_torch,
         .loc = .{
             .x = 0,
             .y = 0,
@@ -33,7 +33,16 @@ pub fn main() !void {
     });
 
     try area.setBlock(alloc, Block{
-        .ty = .redstone_dust,
+        .ty = .{ .comparator = .{ .facing = .north, .mode = .subtract } },
+        .loc = .{
+            .x = 0,
+            .y = 0,
+            .z = 1,
+        },
+    });
+
+    try area.setBlock(alloc, Block{
+        .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
         .loc = .{
             .x = 1,
             .y = 0,
@@ -42,22 +51,25 @@ pub fn main() !void {
     });
 
     try area.setBlock(alloc, Block{
-        .ty = .redstone_dust,
+        .ty = .redstone_wire,
         .loc = .{
-            .x = 2,
-            .y = 0,
-            .z = 0,
-        },
-    });
-
-    try area.setBlock(alloc, Block{
-        .ty = .redstone_dust,
-        .loc = .{
-            .x = 2,
+            .x = 1,
             .y = 0,
             .z = 1,
         },
     });
+
+    try area.setBlock(alloc, Block{
+        .ty = .redstone_wire,
+        .loc = .{
+            .x = 0,
+            .y = 0,
+            .z = 2,
+        },
+    });
+
+    try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
+    try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 2 });
 
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
@@ -66,5 +78,5 @@ pub fn main() !void {
 
     try serialized.toBytes(alloc, &al, true, true);
 
-    try nbt.zipNbt("construction.nbt", al.items);
+    try nbt.zipNbt("not.nbt", al.items);
 }

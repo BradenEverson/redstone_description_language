@@ -7,7 +7,7 @@ const nbt = @import("nbt.zig");
 const NbtNode = @import("nbt/node.zig").NbtNode;
 
 pub const BlockType = enum(u32) {
-    redstone_dust = 0,
+    redstone_wire = 0,
     redstone_torch = 1,
     comparator = 2,
     repeater = 3,
@@ -16,14 +16,14 @@ pub const BlockType = enum(u32) {
 pub const Point = struct { x: u32 = 0, y: u32 = 0, z: u32 = 0 };
 
 pub const BlockMetadata = union(BlockType) {
-    redstone_dust,
+    redstone_wire,
     redstone_torch,
     comparator: ComparatorMetadata,
     repeater: RepeaterMetadata,
 
     pub fn toStr(self: BlockMetadata) []const u8 {
         return switch (self) {
-            .redstone_dust => "minecraft:redstone_wire",
+            .redstone_wire => "minecraft:redstone_wire",
             .redstone_torch => "minecraft:redstone_torch",
             .comparator => "minecraft:comparator",
             .repeater => "minecraft:repeater",
@@ -37,16 +37,78 @@ pub const BlockMetadata = union(BlockType) {
         const tag_name = try nbt.string(alloc, "Name", self.toStr());
         try nbt.add(alloc, tag, tag_name);
 
+        switch (self) {
+            .comparator => |cm| {
+                const properties = try nbt.compound(alloc, "Properties");
+
+                const facing = try nbt.string(alloc, "facing", cm.facing.toStr());
+                try nbt.add(alloc, properties, facing);
+
+                const mode = try nbt.string(alloc, "mode", cm.mode.toStr());
+                try nbt.add(alloc, properties, mode);
+
+                try nbt.add(alloc, tag, properties);
+            },
+
+            .repeater => |rm| {
+                const properties = try nbt.compound(alloc, "Properties");
+
+                const facing = try nbt.string(alloc, "facing", rm.facing.toStr());
+                try nbt.add(alloc, properties, facing);
+
+                const delayStr = try std.fmt.allocPrint(alloc, "{}", .{rm.delay});
+                const mode = try nbt.string(alloc, "delay", delayStr);
+                try nbt.add(alloc, properties, mode);
+
+                try nbt.add(alloc, tag, properties);
+            },
+            else => {},
+        }
+
         return tag;
     }
 };
 
-pub const ComparatorMetadata = struct {};
+pub const ComparatorMetadata = struct {
+    facing: Direction,
+    mode: ComparatorMode,
+};
 
-pub const RepeaterMetadata = struct {};
+pub const RepeaterMetadata = struct {
+    facing: Direction,
+    delay: u8,
+};
+
+pub const Direction = enum {
+    north,
+    south,
+    east,
+    west,
+
+    pub fn toStr(self: Direction) []const u8 {
+        return switch (self) {
+            .north => "north",
+            .south => "south",
+            .east => "east",
+            .west => "west",
+        };
+    }
+};
+
+pub const ComparatorMode = enum {
+    subtract,
+    add,
+
+    pub fn toStr(self: ComparatorMode) []const u8 {
+        return switch (self) {
+            .subtract => "subtract",
+            .add => "add",
+        };
+    }
+};
 
 pub const Block = struct {
-    ty: BlockType,
+    ty: BlockMetadata,
     loc: Point,
 };
 
@@ -60,7 +122,7 @@ pub const CircuitEntity = struct {
 
     blocks: std.ArrayList(Block) = .{},
 
-    palette: std.AutoHashMapUnmanaged(BlockMetadata, void) = .{},
+    palette: std.AutoHashMapUnmanaged(BlockMetadata, u32) = .{},
 
     inline fn adjustSize(self: *CircuitEntity, point: Point) void {
         if (point.x >= self.width) {
@@ -79,6 +141,8 @@ pub const CircuitEntity = struct {
     pub fn deinit(self: *CircuitEntity, alloc: std.mem.Allocator) void {
         self.blocks.deinit(alloc);
         self.palette.deinit(alloc);
+        self.inputs.deinit(alloc);
+        self.outputs.deinit(alloc);
     }
 
     pub fn setInput(self: *CircuitEntity, alloc: std.mem.Allocator, input: Point) !void {
@@ -92,7 +156,10 @@ pub const CircuitEntity = struct {
     }
 
     pub fn setBlock(self: *CircuitEntity, alloc: std.mem.Allocator, block: Block) !void {
-        try self.palette.put(alloc, block.ty, {});
+        if (!self.palette.contains(block.ty)) {
+            try self.palette.put(alloc, block.ty, self.palette.size);
+        }
+
         try self.blocks.append(alloc, block);
         self.adjustSize(block.loc);
     }
@@ -134,11 +201,9 @@ pub const CircuitEntity = struct {
         var palette = self.palette.keyIterator();
         const palette_list = try alloc.alloc(*NbtNode, self.palette.size);
 
-        var idx: usize = 0;
         while (palette.next()) |variant| {
             const tag = try variant.toNbt(alloc);
-            palette_list[idx] = tag;
-            idx += 1;
+            palette_list[@as(usize, self.palette.get(variant.*).?)] = tag;
         }
 
         const p_list = try nbt.list(alloc, "palette", palette_list);
@@ -148,7 +213,7 @@ pub const CircuitEntity = struct {
         const total_blocks = self.blocks.items.len;
         const blocks_list = try alloc.alloc(*NbtNode, total_blocks);
 
-        idx = 0;
+        var idx: usize = 0;
         for (self.blocks.items) |block| {
             const b_entry = try nbt.compound(alloc, null);
 
@@ -158,7 +223,7 @@ pub const CircuitEntity = struct {
             pos_list[2] = try nbt.int(alloc, null, @intCast(block.loc.z));
             try nbt.add(alloc, b_entry, try nbt.list(alloc, "pos", pos_list));
 
-            const state: u32 = @intFromEnum(block.ty);
+            const state: u32 = self.palette.get(block.ty).?;
 
             try nbt.add(alloc, b_entry, try nbt.int(alloc, "state", state));
 
@@ -170,5 +235,3 @@ pub const CircuitEntity = struct {
         return root;
     }
 };
-
-test "basic construction" {}
