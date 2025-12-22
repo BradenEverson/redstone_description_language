@@ -21,6 +21,37 @@ pub const Circuit = struct {
         self.gates.deinit(alloc);
     }
 
+    pub fn paddingNecessary(self: *const Circuit, at: GateId) u32 {
+        const gate_at = self.gates.items[at.id];
+        return switch (gate_at) {
+            .input => |_| 1,
+            .and_gate => |binary| {
+                const left = self.paddingNecessary(binary.left);
+                const right = self.paddingNecessary(binary.right);
+
+                return 5 + @max(left, right);
+            },
+            .or_gate => |binary| {
+                const left = self.paddingNecessary(binary.left);
+                const right = self.paddingNecessary(binary.right);
+
+                return 2 + @max(left, right);
+            },
+            .xor_gate => |binary| {
+                const left = self.paddingNecessary(binary.left);
+                const right = self.paddingNecessary(binary.right);
+
+                return 3 + @max(left, right);
+            },
+            .not_gate => |unary| {
+                const val = self.paddingNecessary(unary.val);
+
+                return @max(2, val);
+            },
+            else => @panic("Unimplemented"),
+        };
+    }
+
     pub fn set(self: *Circuit, name: []const u8, val: bool) void {
         if (self.inputs.get(name)) |in| {
             in.val = val;
