@@ -11,8 +11,17 @@ pub const BlockType = enum(u32) {
     redstone_torch = 1,
     comparator = 2,
     repeater = 3,
+};
 
-    pub fn toStr(self: BlockType) []const u8 {
+pub const Point = struct { x: u32 = 0, y: u32 = 0, z: u32 = 0 };
+
+pub const BlockMetadata = union(BlockType) {
+    redstone_dust,
+    redstone_torch,
+    comparator: ComparatorMetadata,
+    repeater: RepeaterMetadata,
+
+    pub fn toStr(self: BlockMetadata) []const u8 {
         return switch (self) {
             .redstone_dust => "minecraft:redstone_wire",
             .redstone_torch => "minecraft:redstone_torch",
@@ -21,7 +30,7 @@ pub const BlockType = enum(u32) {
         };
     }
 
-    pub fn toNbt(self: BlockType, alloc: std.mem.Allocator) !*NbtNode {
+    pub fn toNbt(self: BlockMetadata, alloc: std.mem.Allocator) !*NbtNode {
         const tag = try nbt.compound(alloc, null);
         errdefer tag.deinit(alloc);
 
@@ -32,12 +41,13 @@ pub const BlockType = enum(u32) {
     }
 };
 
-pub const Point = struct { x: u32 = 0, y: u32 = 0, z: u32 = 0 };
+pub const ComparatorMetadata = struct {};
+
+pub const RepeaterMetadata = struct {};
 
 pub const Block = struct {
     ty: BlockType,
     loc: Point,
-    metadata: u8,
 };
 
 pub const CircuitEntity = struct {
@@ -49,6 +59,8 @@ pub const CircuitEntity = struct {
     outputs: std.ArrayList(Point) = .{},
 
     blocks: std.ArrayList(Block) = .{},
+
+    palette: std.AutoHashMapUnmanaged(BlockMetadata, void) = .{},
 
     inline fn adjustSize(self: *CircuitEntity, point: Point) void {
         if (point.x >= self.width) {
@@ -66,6 +78,7 @@ pub const CircuitEntity = struct {
 
     pub fn deinit(self: *CircuitEntity, alloc: std.mem.Allocator) void {
         self.blocks.deinit(alloc);
+        self.palette.deinit(alloc);
     }
 
     pub fn setInput(self: *CircuitEntity, alloc: std.mem.Allocator, input: Point) !void {
@@ -79,18 +92,9 @@ pub const CircuitEntity = struct {
     }
 
     pub fn setBlock(self: *CircuitEntity, alloc: std.mem.Allocator, block: Block) !void {
+        try self.palette.put(alloc, block.ty, {});
         try self.blocks.append(alloc, block);
         self.adjustSize(block.loc);
-    }
-
-    pub fn place(self: *CircuitEntity, alloc: std.mem.Allocator, block: BlockType, at: Point) !void {
-        const to_place = Block{
-            .loc = at,
-            .ty = block,
-            .metadata = 0,
-        };
-
-        try self.setBlock(alloc, to_place);
     }
 
     /// Connects an output of other to an input of self, modifying self. You can safely destroy other after
@@ -127,18 +131,16 @@ pub const CircuitEntity = struct {
 
         try nbt.add(alloc, root, list);
 
-        const variants = @typeInfo(BlockType).@"enum".fields;
-        const palette_list = try alloc.alloc(*NbtNode, variants.len);
+        var palette = self.palette.keyIterator();
+        const palette_list = try alloc.alloc(*NbtNode, self.palette.size);
 
-        inline for (variants) |variant| {
-            const val = @as(usize, variant.value);
-            const e: BlockType = @enumFromInt(val);
-
-            std.debug.print("{any}\n", .{e});
-
-            const tag = try e.toNbt(alloc);
-            palette_list[variant.value] = tag;
+        var idx: usize = 0;
+        while (palette.next()) |variant| {
+            const tag = try variant.toNbt(alloc);
+            palette_list[idx] = tag;
+            idx += 1;
         }
+
         const p_list = try nbt.list(alloc, "palette", palette_list);
 
         try nbt.add(alloc, root, p_list);
@@ -146,7 +148,7 @@ pub const CircuitEntity = struct {
         const total_blocks = self.blocks.items.len;
         const blocks_list = try alloc.alloc(*NbtNode, total_blocks);
 
-        var idx: usize = 0;
+        idx = 0;
         for (self.blocks.items) |block| {
             const b_entry = try nbt.compound(alloc, null);
 

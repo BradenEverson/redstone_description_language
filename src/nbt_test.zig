@@ -30,7 +30,6 @@ pub fn main() !void {
             .y = 0,
             .z = 0,
         },
-        .metadata = 0,
     });
 
     try area.setBlock(alloc, Block{
@@ -40,7 +39,6 @@ pub fn main() !void {
             .y = 0,
             .z = 0,
         },
-        .metadata = 0,
     });
 
     try area.setBlock(alloc, Block{
@@ -50,7 +48,6 @@ pub fn main() !void {
             .y = 0,
             .z = 0,
         },
-        .metadata = 0,
     });
 
     try area.setBlock(alloc, Block{
@@ -60,7 +57,6 @@ pub fn main() !void {
             .y = 0,
             .z = 1,
         },
-        .metadata = 0,
     });
 
     var al = std.ArrayList(u8){};
