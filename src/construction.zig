@@ -164,7 +164,62 @@ pub const CircuitEntity = struct {
         self.adjustSize(block.loc);
     }
 
-    pub fn not(alloc: std.mem.Allocator) !CircuitEntity {
+    pub fn construct_xor(alloc: std.mem.Allocator) !CircuitEntity {
+        var area = CircuitEntity{};
+
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        return area;
+    }
+
+    pub fn construct_nor(alloc: std.mem.Allocator) !CircuitEntity {
+        var area = CircuitEntity{};
+
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        return area;
+    }
+
+    pub fn construct_or(alloc: std.mem.Allocator) !CircuitEntity {
+        var area = CircuitEntity{};
+
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        return area;
+    }
+
+    pub fn construct_nand(alloc: std.mem.Allocator) !CircuitEntity {
+        var area = CircuitEntity{};
+
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        return area;
+    }
+
+    pub fn construct_and(alloc: std.mem.Allocator) !CircuitEntity {
+        var area = CircuitEntity{};
+
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+
+        return area;
+    }
+
+    pub fn construct_not(alloc: std.mem.Allocator) !CircuitEntity {
         var area = CircuitEntity{};
 
         try area.setBlock(alloc, Block{

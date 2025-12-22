@@ -20,7 +20,7 @@ pub fn main() !void {
 
     const a_alloc = arena.allocator();
 
-    var area = try CircuitEntity.not(alloc);
+    var area = try CircuitEntity.construct_not(alloc);
     defer area.deinit(alloc);
 
     var al = std.ArrayList(u8){};
