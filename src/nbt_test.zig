@@ -54,10 +54,13 @@ pub fn main() !void {
 
     const a = try circuit.input(alloc, "a");
     const b = try circuit.input(alloc, "b");
+    const c = try circuit.input(alloc, "c");
+    const d = try circuit.input(alloc, "d");
 
-    const not_b = try circuit.notGate(alloc, b);
+    const a_or_b = try circuit.orGate(alloc, a, b);
+    const c_or_d = try circuit.orGate(alloc, c, d);
 
-    _ = try circuit.output(alloc, try circuit.xorGate(alloc, a, not_b));
+    _ = try circuit.output(alloc, try circuit.orGate(alloc, a_or_b, c_or_d));
 
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
@@ -68,5 +71,5 @@ pub fn main() !void {
 
     try serialized.toBytes(alloc, &al, true, true);
 
-    try nbt.zipNbt("xor.nbt", al.items);
+    try nbt.zipNbt("orororor.nbt", al.items);
 }

@@ -351,6 +351,7 @@ pub const CircuitEntity = struct {
                 .z = 0,
             },
         });
+
         try area.setBlock(alloc, Block{
             .ty = .redstone_wire,
             .loc = .{
@@ -363,7 +364,7 @@ pub const CircuitEntity = struct {
         try area.setInput(alloc, .{ .x = (n - 1) * (gap + 1), .y = 0, .z = 0 });
 
         try area.setBlock(alloc, Block{
-            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+            .ty = .redstone_wire,
             .loc = .{
                 .x = 0,
                 .y = 0,
@@ -739,7 +740,11 @@ pub const CircuitEntity = struct {
                 result = parent;
             },
             .or_gate => |binary| {
-                var parent = try CircuitEntity.constructOr(alloc);
+                const padding_left = circuit.paddingNecessary(binary.left);
+                const padding_right = circuit.paddingNecessary(binary.right);
+
+                var parent = try CircuitEntity.constructOrN(alloc, 2, padding_left + padding_right);
+
                 const left = circuit.gates.items[binary.left.id];
                 const right = circuit.gates.items[binary.right.id];
 
