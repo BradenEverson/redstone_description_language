@@ -120,7 +120,7 @@ pub const CircuitEntity = struct {
     inputs: std.ArrayList(Point) = .{},
     outputs: std.ArrayList(Point) = .{},
 
-    blocks: std.ArrayList(Block) = .{},
+    blocks: std.AutoHashMapUnmanaged(Point, Block) = .{},
 
     palette: std.AutoHashMapUnmanaged(BlockMetadata, u32) = .{},
 
@@ -160,7 +160,7 @@ pub const CircuitEntity = struct {
             try self.palette.put(alloc, block.ty, self.palette.size);
         }
 
-        try self.blocks.append(alloc, block);
+        try self.blocks.put(alloc, block.loc, block);
         self.adjustSize(block.loc);
     }
 
@@ -529,7 +529,8 @@ pub const CircuitEntity = struct {
         const shift_z: u32 = if (off_z < 0) @intCast(-off_z) else 0;
 
         if (shift_x > 0 or shift_y > 0 or shift_z > 0) {
-            for (self.blocks.items) |*b| {
+            var blocks = self.blocks.valueIterator();
+            while (blocks.next()) |*b| {
                 b.loc.x += shift_x;
                 b.loc.y += shift_y;
                 b.loc.z += shift_z;
@@ -553,7 +554,8 @@ pub const CircuitEntity = struct {
         const final_off_y: u32 = @intCast(@as(i64, self.inputs.items[self_input_idx].y) - @as(i64, other_out.y));
         const final_off_z: u32 = @intCast(@as(i64, self.inputs.items[self_input_idx].z) - @as(i64, other_out.z));
 
-        for (other.blocks.items) |b| {
+        var blocks = other.blocks.valueIterator();
+        for (blocks.next()) |b| {
             var new_block = b;
             new_block.loc.x += final_off_x;
             new_block.loc.y += final_off_y;
@@ -607,11 +609,12 @@ pub const CircuitEntity = struct {
 
         try nbt.add(alloc, root, p_list);
 
-        const total_blocks = self.blocks.items.len;
+        const total_blocks = self.blocks.size;
         const blocks_list = try alloc.alloc(*NbtNode, total_blocks);
 
         var idx: usize = 0;
-        for (self.blocks.items) |block| {
+        var blocks = self.blocks.valueIterator();
+        while (blocks.next()) |block| {
             const b_entry = try nbt.compound(alloc, null);
 
             const pos_list = try alloc.alloc(*NbtNode, 3);
