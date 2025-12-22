@@ -34,9 +34,19 @@ pub fn main() !void {
     var child3 = try CircuitEntity.constructAnd(alloc);
     defer child3.deinit(alloc);
 
-    try area.combine(alloc, &child1, 0, 0);
-    try area.combine(alloc, &child2, 0, 0);
-    try area.combine(alloc, &child3, 0, 0);
+    try area.connect(alloc, &child1, 0, 0);
+    try area.connect(alloc, &child2, 0, 0);
+    try area.connect(alloc, &child3, 0, 0);
+
+    var sum_bit = try CircuitEntity.constructXor(alloc);
+    defer sum_bit.deinit(alloc);
+
+    var sum_bit_child = try CircuitEntity.constructXor(alloc);
+    defer sum_bit_child.deinit(alloc);
+
+    try sum_bit.connect(alloc, &sum_bit_child, 0, 0);
+
+    try area.combine(alloc, &sum_bit);
 
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
@@ -45,5 +55,5 @@ pub fn main() !void {
 
     try serialized.toBytes(alloc, &al, true, true);
 
-    try nbt.zipNbt("cout.nbt", al.items);
+    try nbt.zipNbt("rca.nbt", al.items);
 }

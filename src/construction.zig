@@ -549,9 +549,31 @@ pub const CircuitEntity = struct {
         placeholder.deinit(alloc);
     }
 
+    /// Combines two circuit entities by shifting one to the left
+    pub fn combine(self: *CircuitEntity, alloc: std.mem.Allocator, other: *CircuitEntity) !void {
+        while (self.collision(other)) {
+            try self.shift(alloc, 1, 0, 0);
+        }
+
+        try self.shift(alloc, 2, 0, 0);
+
+        var blocks = other.blocks.valueIterator();
+        while (blocks.next()) |block| {
+            try self.setBlock(alloc, block.*);
+        }
+
+        for (other.inputs.items) |i| {
+            try self.setInput(alloc, i);
+        }
+
+        for (other.outputs.items) |o| {
+            try self.setInput(alloc, o);
+        }
+    }
+
     /// Connects an output of other to an input of self, modifying self. You can safely destroy other after
     /// this operation is complete
-    pub fn combine(
+    pub fn connect(
         self: *CircuitEntity,
         alloc: std.mem.Allocator,
         other: *CircuitEntity,
@@ -604,12 +626,6 @@ pub const CircuitEntity = struct {
         }
 
         _ = self.inputs.orderedRemove(self_input_idx);
-    }
-
-    pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
-        _ = self;
-        _ = alloc;
-        _ = circuit;
     }
 
     /// Checks if a merge would result in any collisions
@@ -675,5 +691,11 @@ pub const CircuitEntity = struct {
 
         try nbt.add(alloc, root, try nbt.list(alloc, "blocks", blocks_list));
         return root;
+    }
+
+    pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {
+        _ = self;
+        _ = alloc;
+        _ = circuit;
     }
 };
