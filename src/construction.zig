@@ -301,7 +301,7 @@ pub const CircuitEntity = struct {
         return area;
     }
 
-    pub fn constructOrN(alloc: std.mem.Allocator, n: u32) !CircuitEntity {
+    pub fn constructOrN(alloc: std.mem.Allocator, n: u32, gap: u32) !CircuitEntity {
         var area = CircuitEntity{};
 
         for (0..n - 1) |i| {
@@ -309,7 +309,7 @@ pub const CircuitEntity = struct {
             try area.setBlock(alloc, Block{
                 .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
                 .loc = .{
-                    .x = x * 2,
+                    .x = x * (gap + 1),
                     .y = 0,
                     .z = 0,
                 },
@@ -318,28 +318,32 @@ pub const CircuitEntity = struct {
             try area.setBlock(alloc, Block{
                 .ty = .redstone_wire,
                 .loc = .{
-                    .x = x * 2,
+                    .x = x * (gap + 1),
                     .y = 0,
                     .z = 1,
                 },
             });
 
-            try area.setBlock(alloc, Block{
-                .ty = .redstone_wire,
-                .loc = .{
-                    .x = x * 2 + 1,
-                    .y = 0,
-                    .z = 1,
-                },
-            });
+            for (1..gap + 1) |j| {
+                const g: u32 = @truncate(j);
 
-            try area.setInput(alloc, .{ .x = x, .y = 0, .z = 0 });
+                try area.setBlock(alloc, Block{
+                    .ty = .redstone_wire,
+                    .loc = .{
+                        .x = x * (gap + 1) + g,
+                        .y = 0,
+                        .z = 1,
+                    },
+                });
+            }
+
+            try area.setInput(alloc, .{ .x = x * (gap + 1), .y = 0, .z = 0 });
         }
 
         try area.setBlock(alloc, Block{
             .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
             .loc = .{
-                .x = (n - 1) * 2,
+                .x = (n - 1) * (gap + 1),
                 .y = 0,
                 .z = 0,
             },
@@ -347,11 +351,13 @@ pub const CircuitEntity = struct {
         try area.setBlock(alloc, Block{
             .ty = .redstone_wire,
             .loc = .{
-                .x = (n - 1) * 2,
+                .x = (n - 1) * (gap + 1),
                 .y = 0,
                 .z = 1,
             },
         });
+
+        try area.setInput(alloc, .{ .x = (n - 1) * (gap + 1), .y = 0, .z = 0 });
 
         try area.setBlock(alloc, Block{
             .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
@@ -527,6 +533,19 @@ pub const CircuitEntity = struct {
         for (placeholder.items) |insert| {
             try self.setBlock(alloc, insert);
         }
+
+        for (self.inputs.items) |*i| {
+            i.x += dx;
+            i.y += dy;
+            i.z += dz;
+        }
+
+        for (self.outputs.items) |*o| {
+            o.x += dx;
+            o.y += dy;
+            o.z += dz;
+        }
+
         placeholder.deinit(alloc);
     }
 
@@ -535,62 +554,42 @@ pub const CircuitEntity = struct {
     pub fn combine(
         self: *CircuitEntity,
         alloc: std.mem.Allocator,
-        other: CircuitEntity,
+        other: *CircuitEntity,
         self_input_idx: usize,
         other_output_idx: usize,
     ) !void {
-        const self_in = self.inputs.items[self_input_idx];
-        const other_out = other.outputs.items[other_output_idx];
-
-        const off_x: i64 = @as(i64, self_in.x) - @as(i64, other_out.x);
-        const off_y: i64 = @as(i64, self_in.y) - @as(i64, other_out.y);
-        const off_z: i64 = @as(i64, self_in.z) - @as(i64, other_out.z);
-
-        const shift_x: u32 = if (off_x < 0) @intCast(-off_x) else 0;
-        const shift_y: u32 = if (off_y < 0) @intCast(-off_y) else 0;
-        const shift_z: u32 = if (off_z < 0) @intCast(-off_z) else 0;
-
-        if (shift_x > 0 or shift_y > 0 or shift_z > 0) {
-            var blocks = self.blocks.valueIterator();
-            while (blocks.next()) |*b| {
-                b.loc.x += shift_x;
-                b.loc.y += shift_y;
-                b.loc.z += shift_z;
+        const si = &self.inputs.items[self_input_idx];
+        const oo = &other.outputs.items[other_output_idx];
+        while (si.x != oo.x) {
+            const mag = @max(si.x, oo.x) - @min(si.x, oo.x);
+            if (si.x < oo.x) {
+                try self.shift(alloc, mag, 0, 0);
+            } else {
+                try other.shift(alloc, mag, 0, 0);
             }
-            for (self.inputs.items) |*i| {
-                i.x += shift_x;
-                i.y += shift_y;
-                i.z += shift_z;
-            }
-            for (self.outputs.items) |*o| {
-                o.x += shift_x;
-                o.y += shift_y;
-                o.z += shift_z;
-            }
-            self.width += shift_x;
-            self.height += shift_y;
-            self.length += shift_z;
         }
 
-        const final_off_x: u32 = @intCast(@as(i64, self.inputs.items[self_input_idx].x) - @as(i64, other_out.x));
-        const final_off_y: u32 = @intCast(@as(i64, self.inputs.items[self_input_idx].y) - @as(i64, other_out.y));
-        const final_off_z: u32 = @intCast(@as(i64, self.inputs.items[self_input_idx].z) - @as(i64, other_out.z));
+        while (self.collision(other)) {
+            try self.shift(alloc, 0, 0, 1);
+        }
 
         var blocks = other.blocks.valueIterator();
-        for (blocks.next()) |b| {
-            var new_block = b;
-            new_block.loc.x += final_off_x;
-            new_block.loc.y += final_off_y;
-            new_block.loc.z += final_off_z;
-            try self.setBlock(alloc, new_block);
+        while (blocks.next()) |b| {
+            try self.setBlock(alloc, b.*);
         }
 
         for (other.inputs.items) |in| {
             try self.setInput(alloc, .{
-                .x = in.x + final_off_x,
-                .y = in.y + final_off_y,
-                .z = in.z + final_off_z,
+                .x = in.x,
+                .y = in.y,
+                .z = in.z,
             });
+        }
+
+        for (0..other.outputs.items.len) |out| {
+            if (out != other_output_idx) {
+                try self.setOutput(alloc, other.outputs.items[out]);
+            }
         }
 
         _ = self.inputs.orderedRemove(self_input_idx);
@@ -606,7 +605,7 @@ pub const CircuitEntity = struct {
     fn collision(self: *const CircuitEntity, other: *const CircuitEntity) bool {
         var points = other.blocks.valueIterator();
         while (points.next()) |p| {
-            if (self.blocks.contains(p)) return true;
+            if (self.blocks.contains(p.loc)) return true;
         }
 
         return false;

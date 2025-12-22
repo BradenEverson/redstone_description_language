@@ -20,23 +20,23 @@ pub fn main() !void {
 
     const a_alloc = arena.allocator();
 
-    var area = try CircuitEntity.constructOrN(alloc, 3);
+    var area = try CircuitEntity.constructOrN(alloc, 3, 4);
     defer area.deinit(alloc);
 
     try area.shift(alloc, 0, 0, 5);
 
-    // var child1 = try CircuitEntity.constructAnd(alloc);
-    // defer child1.deinit(alloc);
-    //
-    // var child2 = try CircuitEntity.constructAnd(alloc);
-    // defer child2.deinit(alloc);
-    //
-    // var child3 = try CircuitEntity.constructAnd(alloc);
-    // defer child3.deinit(alloc);
-    //
-    // try area.combine(alloc, &child1, 0, 0);
-    // try area.combine(alloc, &child2, 0, 0);
-    // try area.combine(alloc, &child3, 0, 0);
+    var child1 = try CircuitEntity.constructAnd(alloc);
+    defer child1.deinit(alloc);
+
+    var child2 = try CircuitEntity.constructAnd(alloc);
+    defer child2.deinit(alloc);
+
+    var child3 = try CircuitEntity.constructAnd(alloc);
+    defer child3.deinit(alloc);
+
+    try area.combine(alloc, &child1, 0, 0);
+    try area.combine(alloc, &child2, 0, 0);
+    try area.combine(alloc, &child3, 0, 0);
 
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
