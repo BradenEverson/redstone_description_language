@@ -172,7 +172,7 @@ pub const CircuitEntity = struct {
             .loc = .{
                 .x = 0,
                 .y = 0,
-                .z = 0,
+                .z = 1,
             },
         });
 
@@ -181,7 +181,7 @@ pub const CircuitEntity = struct {
             .loc = .{
                 .x = 1,
                 .y = 0,
-                .z = 0,
+                .z = 1,
             },
         });
 
@@ -190,7 +190,7 @@ pub const CircuitEntity = struct {
             .loc = .{
                 .x = 2,
                 .y = 0,
-                .z = 0,
+                .z = 1,
             },
         });
 
@@ -199,7 +199,7 @@ pub const CircuitEntity = struct {
             .loc = .{
                 .x = 3,
                 .y = 0,
-                .z = 0,
+                .z = 1,
             },
         });
 
@@ -208,7 +208,7 @@ pub const CircuitEntity = struct {
             .loc = .{
                 .x = 0,
                 .y = 0,
-                .z = 1,
+                .z = 2,
             },
         });
 
@@ -217,30 +217,12 @@ pub const CircuitEntity = struct {
             .loc = .{
                 .x = 3,
                 .y = 0,
-                .z = 1,
-            },
-        });
-
-        try area.setBlock(alloc, Block{
-            .ty = .redstone_wire,
-            .loc = .{
-                .x = 1,
-                .y = 0,
                 .z = 2,
             },
         });
 
         try area.setBlock(alloc, Block{
             .ty = .redstone_wire,
-            .loc = .{
-                .x = 2,
-                .y = 0,
-                .z = 2,
-            },
-        });
-
-        try area.setBlock(alloc, Block{
-            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
             .loc = .{
                 .x = 1,
                 .y = 0,
@@ -251,9 +233,27 @@ pub const CircuitEntity = struct {
         try area.setBlock(alloc, Block{
             .ty = .redstone_wire,
             .loc = .{
+                .x = 2,
+                .y = 0,
+                .z = 3,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 4,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
                 .x = 3,
                 .y = 0,
-                .z = 1,
+                .z = 2,
             },
         });
 
@@ -262,7 +262,7 @@ pub const CircuitEntity = struct {
             .loc = .{
                 .x = 1,
                 .y = 0,
-                .z = 1,
+                .z = 2,
             },
         });
 
@@ -271,14 +271,32 @@ pub const CircuitEntity = struct {
             .loc = .{
                 .x = 2,
                 .y = 0,
-                .z = 1,
+                .z = 2,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+            .loc = .{
+                .x = 3,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 0,
             },
         });
 
         try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
         try area.setInput(alloc, .{ .x = 3, .y = 0, .z = 0 });
 
-        try area.setOutput(alloc, .{ .x = 1, .y = 0, .z = 3 });
+        try area.setOutput(alloc, .{ .x = 1, .y = 0, .z = 5 });
 
         return area;
     }
@@ -334,7 +352,7 @@ pub const CircuitEntity = struct {
         try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
         try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
 
-        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 2 });
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 3 });
 
         return area;
     }
@@ -417,7 +435,7 @@ pub const CircuitEntity = struct {
         try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
         try area.setInput(alloc, .{ .x = 3, .y = 0, .z = 0 });
 
-        try area.setOutput(alloc, .{ .x = 2, .y = 0, .z = 1 });
+        try area.setOutput(alloc, .{ .x = 2, .y = 0, .z = 2 });
 
         return area;
     }
@@ -471,20 +489,73 @@ pub const CircuitEntity = struct {
         });
 
         try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
-        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 2 });
+        try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 3 });
 
         return area;
     }
 
     /// Connects an output of other to an input of self, modifying self. You can safely destroy other after
     /// this operation is complete
-    pub fn combine(self: *CircuitEntity, other: *CircuitEntity, to_self_input: usize, from_other_output: usize) !void {
-        // TODO: Shift the width and all points in self over by other's dimensions, place other's output at
-        // the location of self's input
-        _ = self;
-        _ = other;
-        _ = to_self_input;
-        _ = from_other_output;
+    pub fn combine(
+        self: *CircuitEntity,
+        alloc: std.mem.Allocator,
+        other: CircuitEntity,
+        self_input_idx: usize,
+        other_output_idx: usize,
+    ) !void {
+        const self_in = self.inputs.items[self_input_idx];
+        const other_out = other.outputs.items[other_output_idx];
+
+        _ = self.inputs.orderedRemove(self_input_idx);
+
+        const off_x: i64 = @as(i64, self_in.x) - @as(i64, other_out.x);
+        const off_y: i64 = @as(i64, self_in.y) - @as(i64, other_out.y);
+        const off_z: i64 = @as(i64, self_in.z) - @as(i64, other_out.z);
+
+        const shift_x: u32 = if (off_x < 0) @intCast(-off_x) else 0;
+        const shift_y: u32 = if (off_y < 0) @intCast(-off_y) else 0;
+        const shift_z: u32 = if (off_z < 0) @intCast(-off_z) else 0;
+
+        if (shift_x > 0 or shift_y > 0 or shift_z > 0) {
+            for (self.blocks.items) |*b| {
+                b.loc.x += shift_x;
+                b.loc.y += shift_y;
+                b.loc.z += shift_z;
+            }
+            for (self.inputs.items) |*i| {
+                i.x += shift_x;
+                i.y += shift_y;
+                i.z += shift_z;
+            }
+            for (self.outputs.items) |*o| {
+                o.x += shift_x;
+                o.y += shift_y;
+                o.z += shift_z;
+            }
+            self.width += shift_x;
+            self.height += shift_y;
+            self.length += shift_z;
+        }
+
+        const final_off_x: u32 = @intCast(@as(i64, self.inputs.items[self_input_idx].x) - @as(i64, other_out.x));
+        const final_off_y: u32 = @intCast(@as(i64, self.inputs.items[self_input_idx].y) - @as(i64, other_out.y));
+        const final_off_z: u32 = @intCast(@as(i64, self.inputs.items[self_input_idx].z) - @as(i64, other_out.z));
+
+        for (other.blocks.items) |b| {
+            var new_block = b;
+            new_block.loc.x += final_off_x;
+            new_block.loc.y += final_off_y;
+            new_block.loc.z += final_off_z;
+            try self.setBlock(alloc, new_block);
+        }
+
+        for (other.inputs.items) |in| {
+            try self.setInput(alloc, .{
+                .x = in.x + final_off_x,
+                .y = in.y + final_off_y,
+                .z = in.z + final_off_z,
+            });
+        }
     }
 
     pub fn translateToEntity(self: *CircuitEntity, alloc: std.mem.Allocator, circuit: Circuit) !void {

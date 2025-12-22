@@ -23,6 +23,14 @@ pub fn main() !void {
     var area = try CircuitEntity.construct_xor(alloc);
     defer area.deinit(alloc);
 
+    var child = try CircuitEntity.construct_or(alloc);
+    defer child.deinit(alloc);
+
+    var not = try CircuitEntity.construct_not(alloc);
+    defer not.deinit(alloc);
+
+    try area.combine(alloc, child, 0, 0);
+
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
 
@@ -30,5 +38,5 @@ pub fn main() !void {
 
     try serialized.toBytes(alloc, &al, true, true);
 
-    try nbt.zipNbt("xor.nbt", al.items);
+    try nbt.zipNbt("xor_combined_or.nbt", al.items);
 }
