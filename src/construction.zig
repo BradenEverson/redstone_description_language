@@ -164,6 +164,125 @@ pub const CircuitEntity = struct {
         self.adjustSize(block.loc);
     }
 
+    pub fn construct_xor(alloc: std.mem.Allocator) !CircuitEntity {
+        var area = CircuitEntity{};
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 2,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 3,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 0,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 3,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 2,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 2,
+                .y = 0,
+                .z = 2,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 3,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = .{
+                .x = 3,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .comparator = .{ .mode = .subtract, .facing = .north } },
+            .loc = .{
+                .x = 1,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .comparator = .{ .mode = .subtract, .facing = .north } },
+            .loc = .{
+                .x = 2,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = 3, .y = 0, .z = 0 });
+
+        try area.setOutput(alloc, .{ .x = 1, .y = 0, .z = 3 });
+
+        return area;
+    }
+
     pub fn construct_or(alloc: std.mem.Allocator) !CircuitEntity {
         var area = CircuitEntity{};
 
