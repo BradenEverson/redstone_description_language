@@ -27,10 +27,11 @@ pub fn main() !void {
     const a = try circuit.input(alloc, "a");
     const b = try circuit.input(alloc, "b");
     const c = try circuit.input(alloc, "c");
+    const not_c = try circuit.notGate(alloc, c);
     const d = try circuit.input(alloc, "d");
 
     const a_or_b = try circuit.orGate(alloc, a, b);
-    const c_or_d = try circuit.orGate(alloc, c, d);
+    const c_or_d = try circuit.orGate(alloc, not_c, d);
 
     _ = try circuit.output(alloc, try circuit.xorGate(alloc, a_or_b, c_or_d));
 
