@@ -29,7 +29,7 @@ pub const Circuit = struct {
                 const left = self.paddingNecessary(binary.left);
                 const right = self.paddingNecessary(binary.right);
 
-                return 5 + @max(left, right);
+                return 6 + @max(left, right);
             },
             .or_gate => |binary| {
                 const left = self.paddingNecessary(binary.left);
