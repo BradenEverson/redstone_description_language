@@ -445,67 +445,49 @@ pub const CircuitEntity = struct {
         return constructOrN(alloc, 2, 1);
     }
 
-    pub fn constructAnd(alloc: std.mem.Allocator) !CircuitEntity {
+    pub fn constructAndPadding(alloc: std.mem.Allocator, p: u32) !CircuitEntity {
+        var padding = p;
+        if (padding % 2 == 0) padding += 1;
+
         var area = CircuitEntity{};
 
-        try area.setBlock(alloc, Block{
-            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
-            .loc = .{
-                .x = 1,
-                .y = 0,
-                .z = 0,
-            },
-        });
+        var curr_x: u32 = 0;
 
         try area.setBlock(alloc, Block{
             .ty = .redstone_torch,
             .loc = .{
-                .x = 2,
+                .x = curr_x,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        curr_x += 1;
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+            .loc = .{
+                .x = curr_x,
                 .y = 0,
                 .z = 0,
             },
         });
 
         try area.setBlock(alloc, Block{
-            .ty = .{ .repeater = .{ .facing = .north, .delay = 1 } },
+            .ty = .{ .comparator = .{ .mode = .subtract, .facing = .west } },
             .loc = .{
-                .x = 3,
-                .y = 0,
-                .z = 0,
-            },
-        });
-
-        try area.setBlock(alloc, Block{
-            .ty = .redstone_torch,
-            .loc = .{
-                .x = 0,
+                .x = curr_x,
                 .y = 0,
                 .z = 1,
             },
         });
 
-        try area.setBlock(alloc, Block{
-            .ty = .{ .comparator = .{ .facing = .west, .mode = .subtract } },
-            .loc = .{
-                .x = 1,
-                .y = 0,
-                .z = 1,
-            },
-        });
+        curr_x += 1;
 
         try area.setBlock(alloc, Block{
-            .ty = .{ .comparator = .{ .facing = .north, .mode = .subtract } },
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .west } },
             .loc = .{
-                .x = 2,
-                .y = 0,
-                .z = 1,
-            },
-        });
-
-        try area.setBlock(alloc, Block{
-            .ty = .{ .comparator = .{ .facing = .east, .mode = .subtract } },
-            .loc = .{
-                .x = 3,
+                .x = curr_x,
                 .y = 0,
                 .z = 1,
             },
@@ -514,16 +496,142 @@ pub const CircuitEntity = struct {
         try area.setBlock(alloc, Block{
             .ty = .redstone_torch,
             .loc = .{
-                .x = 4,
+                .x = curr_x,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        curr_x += 1;
+
+        for (0..padding / 2) |_| {
+            try area.setBlock(alloc, Block{
+                .ty = .redstone_wire,
+                .loc = .{
+                    .x = curr_x,
+                    .y = 0,
+                    .z = 1,
+                },
+            });
+            curr_x += 1;
+        }
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .west } },
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        curr_x += 1;
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .comparator = .{ .mode = .subtract, .facing = .north } },
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 2,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_torch,
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        curr_x += 1;
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        curr_x += 1;
+
+        for (0..padding / 2) |_| {
+            try area.setBlock(alloc, Block{
+                .ty = .redstone_wire,
+                .loc = .{
+                    .x = curr_x,
+                    .y = 0,
+                    .z = 1,
+                },
+            });
+            curr_x += 1;
+        }
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_torch,
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        curr_x += 1;
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 0,
+            },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .comparator = .{ .mode = .subtract, .facing = .east } },
+            .loc = .{
+                .x = curr_x,
+                .y = 0,
+                .z = 1,
+            },
+        });
+
+        curr_x += 1;
+
+        try area.setBlock(alloc, Block{
+            .ty = .redstone_torch,
+            .loc = .{
+                .x = curr_x,
                 .y = 0,
                 .z = 1,
             },
         });
 
         try area.setInput(alloc, .{ .x = 1, .y = 0, .z = 0 });
-        try area.setInput(alloc, .{ .x = 3, .y = 0, .z = 0 });
+        try area.setInput(alloc, .{ .x = curr_x - 1, .y = 0, .z = 0 });
 
-        try area.setOutput(alloc, .{ .x = 2, .y = 0, .z = 2 });
+        try area.setOutput(alloc, .{ .x = 4 + padding / 2, .y = 0, .z = 3 });
 
         return area;
     }
@@ -768,7 +876,9 @@ pub const CircuitEntity = struct {
                 result = try CircuitEntity.constructInput(alloc);
             },
             .and_gate => |binary| {
-                var parent = try CircuitEntity.constructAnd(alloc);
+                const padding_left = circuit.paddingNecessary(binary.left);
+                const padding_right = circuit.paddingNecessary(binary.right);
+                var parent = try CircuitEntity.constructAndPadding(alloc, padding_right + padding_left);
 
                 const left = circuit.gates.items[binary.left.id];
                 const right = circuit.gates.items[binary.right.id];
