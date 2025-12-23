@@ -24,24 +24,24 @@ pub const Circuit = struct {
     pub fn paddingNecessary(self: *const Circuit, at: GateId) u32 {
         const gate_at = self.gates.items[at.id];
         return switch (gate_at) {
-            .input => |_| 1,
+            .input => |_| 0,
             .and_gate => |binary| {
                 const left = self.paddingNecessary(binary.left);
                 const right = self.paddingNecessary(binary.right);
 
-                return 6 + @max(left, right);
+                return 5 + left + right;
             },
             .or_gate => |binary| {
                 const left = self.paddingNecessary(binary.left);
                 const right = self.paddingNecessary(binary.right);
 
-                return 2 + @max(left, right);
+                return 4 + left + right;
             },
             .xor_gate => |binary| {
                 const left = self.paddingNecessary(binary.left);
                 const right = self.paddingNecessary(binary.right);
 
-                return 3 + @max(left, right);
+                return 4 + left + right;
             },
             .not_gate => |unary| {
                 const val = self.paddingNecessary(unary.val);

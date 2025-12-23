@@ -34,7 +34,7 @@ pub fn main() !void {
 
     const as = try circuit.orGate(alloc, a_and_b, a_and_cin);
 
-    _ = try circuit.output(alloc, try circuit.xorGate(alloc, as, b_and_cin));
+    _ = try circuit.output(alloc, try circuit.orGate(alloc, as, b_and_cin));
 
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
