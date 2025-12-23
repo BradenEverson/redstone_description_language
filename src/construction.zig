@@ -375,7 +375,7 @@ pub const CircuitEntity = struct {
             for (1..gap + 1) |j| {
                 const g: u32 = @truncate(j);
 
-                if (j % 7 == 0) {
+                if (j % 10 == 0) {
                     try area.setBlock(alloc, Block{
                         .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
                         .loc = .{
