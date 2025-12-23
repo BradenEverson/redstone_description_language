@@ -36,6 +36,9 @@ pub fn main() !void {
 
     _ = try circuit.output(alloc, try circuit.orGate(alloc, as, b_and_cin));
 
+    const a_xor_b = try circuit.xorGate(alloc, a, b);
+    _ = try circuit.output(alloc, try circuit.xorGate(alloc, a_xor_b, cin));
+
     var al = std.ArrayList(u8){};
     defer al.deinit(alloc);
 

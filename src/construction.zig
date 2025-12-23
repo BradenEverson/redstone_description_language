@@ -515,15 +515,26 @@ pub const CircuitEntity = struct {
 
         curr_x += 1;
 
-        for (0..padding / 2) |_| {
-            try area.setBlock(alloc, Block{
-                .ty = .redstone_wire,
-                .loc = .{
-                    .x = curr_x,
-                    .y = 0,
-                    .z = 1,
-                },
-            });
+        for (0..padding / 2) |i| {
+            if (i % 10 == 0) {
+                try area.setBlock(alloc, Block{
+                    .ty = .{ .repeater = .{ .delay = 1, .facing = .west } },
+                    .loc = .{
+                        .x = curr_x,
+                        .y = 0,
+                        .z = 1,
+                    },
+                });
+            } else {
+                try area.setBlock(alloc, Block{
+                    .ty = .redstone_wire,
+                    .loc = .{
+                        .x = curr_x,
+                        .y = 0,
+                        .z = 1,
+                    },
+                });
+            }
             curr_x += 1;
         }
 
@@ -578,15 +589,26 @@ pub const CircuitEntity = struct {
 
         curr_x += 1;
 
-        for (0..padding / 2) |_| {
-            try area.setBlock(alloc, Block{
-                .ty = .redstone_wire,
-                .loc = .{
-                    .x = curr_x,
-                    .y = 0,
-                    .z = 1,
-                },
-            });
+        for (0..padding / 2) |i| {
+            if (i % 10 == 0) {
+                try area.setBlock(alloc, Block{
+                    .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
+                    .loc = .{
+                        .x = curr_x,
+                        .y = 0,
+                        .z = 1,
+                    },
+                });
+            } else {
+                try area.setBlock(alloc, Block{
+                    .ty = .redstone_wire,
+                    .loc = .{
+                        .x = curr_x,
+                        .y = 0,
+                        .z = 1,
+                    },
+                });
+            }
             curr_x += 1;
         }
 
