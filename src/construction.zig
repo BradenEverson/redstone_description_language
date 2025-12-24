@@ -792,16 +792,10 @@ pub const CircuitEntity = struct {
             }
         }
 
-        var curr = other.outputs.items[other_output_idx];
+        const curr = other.outputs.items[other_output_idx];
         const end = self.internal_inputs.items[self_input_idx];
 
-        while (!std.meta.eql(curr, end)) {
-            try self.setBlock(alloc, .{
-                .ty = .redstone_wire,
-                .loc = curr,
-            });
-            curr.z += 1;
-        }
+        try self.connectPoints(alloc, end, curr);
 
         _ = self.internal_inputs.orderedRemove(self_input_idx);
     }
@@ -1105,6 +1099,8 @@ pub const CircuitEntity = struct {
         const end = result.width;
 
         while (names.next()) |name| {
+            std.debug.print("{s}\n", .{name.*});
+
             const z = idx * 4;
             try input_z.put(alloc, name.*, z);
 

@@ -24,20 +24,33 @@ pub fn main() !void {
     var circuit = Circuit{};
     defer circuit.deinit(alloc);
 
-    const a = try circuit.input(alloc, "a");
-    const b = try circuit.input(alloc, "b");
+    const a0 = try circuit.input(alloc, "a0");
+    const a1 = try circuit.input(alloc, "a1");
+    const b0 = try circuit.input(alloc, "b0");
+    const b1 = try circuit.input(alloc, "b1");
 
     const cin = try circuit.input(alloc, "cin");
 
-    const a_and_b = try circuit.andGate(alloc, a, b);
-    const a_and_cin = try circuit.andGate(alloc, a, cin);
-    const b_and_cin = try circuit.andGate(alloc, b, cin);
+    const a0_and_b0 = try circuit.andGate(alloc, a0, b0);
+    const a0_and_cin = try circuit.andGate(alloc, a0, cin);
+    const b0_and_cin = try circuit.andGate(alloc, b0, cin);
 
-    const as = try circuit.orGate(alloc, a_and_b, a_and_cin);
+    const as = try circuit.orGate(alloc, a0_and_b0, a0_and_cin);
 
-    _ = try circuit.output(alloc, try circuit.orGate(alloc, as, b_and_cin));
+    const cout = try circuit.orGate(alloc, as, b0_and_cin);
 
-    const a_xor_b = try circuit.xorGate(alloc, a, b);
+    const a1_and_b1 = try circuit.andGate(alloc, a1, b1);
+    const a1_and_cin = try circuit.andGate(alloc, a1, cout);
+    const b1_and_cin = try circuit.andGate(alloc, b1, cout);
+
+    const a1s = try circuit.orGate(alloc, a1_and_b1, a1_and_cin);
+
+    _ = try circuit.output(alloc, try circuit.orGate(alloc, a1s, b1_and_cin));
+
+    const a1_xor_b1 = try circuit.xorGate(alloc, a1, b1);
+    _ = try circuit.output(alloc, try circuit.xorGate(alloc, a1_xor_b1, cout));
+
+    const a_xor_b = try circuit.xorGate(alloc, a0, b0);
     _ = try circuit.output(alloc, try circuit.xorGate(alloc, a_xor_b, cin));
 
     const area = try CircuitEntity.translateToEntity(a_alloc, circuit);
