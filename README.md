@@ -13,5 +13,5 @@ The process of going from VHDL source to Minecraft Entity is a very involved one
 ```
 
 ## Examples
-### Singl-Bit Full Adder:
+### Single-Bit Full Adder:
 <img width="1819" height="968" alt="FA" src="https://github.com/user-attachments/assets/0dd89604-e05f-4ada-9208-875f59867996" />
