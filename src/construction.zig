@@ -346,30 +346,7 @@ pub const CircuitEntity = struct {
                 },
             });
 
-            for (1..gap + 1) |j| {
-                const g: u32 = @truncate(j);
-
-                if (j % 10 == 0) {
-                    try area.setBlock(alloc, Block{
-                        .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
-                        .loc = .{
-                            .x = x * (gap + 1) + g,
-                            .y = 0,
-                            .z = 1,
-                        },
-                    });
-                } else {
-                    try area.setBlock(alloc, Block{
-                        .ty = .redstone_wire,
-                        .loc = .{
-                            .x = x * (gap + 1) + g,
-                            .y = 0,
-                            .z = 1,
-                        },
-                    });
-                }
-            }
-
+            try area.connectPoints(alloc, .{ .x = x + gap + 1, .y = 0, .z = 1 }, .{ .x = x, .y = 0, .z = 1 });
             try area.setInput(alloc, .{ .x = x * (gap + 1), .y = 0, .z = 0 });
         }
 
@@ -489,28 +466,8 @@ pub const CircuitEntity = struct {
 
         curr_x += 1;
 
-        for (0..padding / 2) |i| {
-            if (i % 10 == 0) {
-                try area.setBlock(alloc, Block{
-                    .ty = .{ .repeater = .{ .delay = 1, .facing = .west } },
-                    .loc = .{
-                        .x = curr_x,
-                        .y = 0,
-                        .z = 1,
-                    },
-                });
-            } else {
-                try area.setBlock(alloc, Block{
-                    .ty = .redstone_wire,
-                    .loc = .{
-                        .x = curr_x,
-                        .y = 0,
-                        .z = 1,
-                    },
-                });
-            }
-            curr_x += 1;
-        }
+        try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 1 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 1 });
+        curr_x += padding / 2;
 
         try area.setBlock(alloc, Block{
             .ty = .{ .repeater = .{ .delay = 1, .facing = .west } },
@@ -563,28 +520,8 @@ pub const CircuitEntity = struct {
 
         curr_x += 1;
 
-        for (0..padding / 2) |i| {
-            if (i % 10 == 0) {
-                try area.setBlock(alloc, Block{
-                    .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
-                    .loc = .{
-                        .x = curr_x,
-                        .y = 0,
-                        .z = 1,
-                    },
-                });
-            } else {
-                try area.setBlock(alloc, Block{
-                    .ty = .redstone_wire,
-                    .loc = .{
-                        .x = curr_x,
-                        .y = 0,
-                        .z = 1,
-                    },
-                });
-            }
-            curr_x += 1;
-        }
+        try area.connectPoints(alloc, .{ .x = curr_x + padding / 2, .y = 0, .z = 1 }, .{ .x = curr_x - 1, .y = 0, .z = 1 });
+        curr_x += padding / 2;
 
         try area.setBlock(alloc, Block{
             .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
@@ -998,7 +935,7 @@ pub const CircuitEntity = struct {
                 }
             }
 
-            const ty = if (steps % 10 == 0) BlockMetadata{ .repeater = .{ .delay = 1, .facing = dir } } else .redstone_wire;
+            const ty = if (steps % 10 == 0 and !std.meta.eql(curr, to)) BlockMetadata{ .repeater = .{ .delay = 1, .facing = dir } } else .redstone_wire;
 
             try self.setBlock(alloc, Block{
                 .ty = ty,
