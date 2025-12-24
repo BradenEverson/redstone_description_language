@@ -120,7 +120,9 @@ pub const CircuitEntity = struct {
     height: u32 = 0,
     length: u32 = 0,
 
-    inputs: std.ArrayList(Point) = .{},
+    internal_inputs: std.ArrayList(Point) = .{},
+    inputs: std.ArrayList(struct { Point, []const u8 }) = .{},
+
     outputs: std.ArrayList(Point) = .{},
 
     blocks: std.AutoHashMapUnmanaged(Point, Block) = .{},
@@ -144,12 +146,18 @@ pub const CircuitEntity = struct {
     pub fn deinit(self: *CircuitEntity, alloc: std.mem.Allocator) void {
         self.blocks.deinit(alloc);
         self.palette.deinit(alloc);
-        self.inputs.deinit(alloc);
+        self.internal_inputs.deinit(alloc);
         self.outputs.deinit(alloc);
+        self.inputs.deinit(alloc);
+    }
+
+    pub fn setExternalInput(self: *CircuitEntity, alloc: std.mem.Allocator, p: Point, name: []const u8) !void {
+        try self.inputs.append(alloc, .{ p, name });
+        self.adjustSize(p);
     }
 
     pub fn setInput(self: *CircuitEntity, alloc: std.mem.Allocator, input: Point) !void {
-        try self.inputs.append(alloc, input);
+        try self.internal_inputs.append(alloc, input);
         self.adjustSize(input);
     }
 
@@ -433,7 +441,7 @@ pub const CircuitEntity = struct {
         return area;
     }
 
-    pub fn constructInput(alloc: std.mem.Allocator) !CircuitEntity {
+    pub fn constructInput(alloc: std.mem.Allocator, name: []const u8) !CircuitEntity {
         var area = CircuitEntity{};
 
         try area.setBlock(alloc, Block{
@@ -445,7 +453,7 @@ pub const CircuitEntity = struct {
             },
         });
 
-        try area.setInput(alloc, .{ .x = 0, .y = 0, .z = 0 });
+        try area.setExternalInput(alloc, .{ .x = 0, .y = 0, .z = 0 }, name);
 
         try area.setOutput(alloc, .{ .x = 0, .y = 0, .z = 1 });
 
@@ -743,10 +751,16 @@ pub const CircuitEntity = struct {
             try self.setBlock(alloc, insert);
         }
 
-        for (self.inputs.items) |*i| {
+        for (self.internal_inputs.items) |*i| {
             i.x += dx;
             i.y += dy;
             i.z += dz;
+        }
+
+        for (self.inputs.items) |*i| {
+            i.@"0".x += dx;
+            i.@"0".y += dy;
+            i.@"0".z += dz;
         }
 
         for (self.outputs.items) |*o| {
@@ -771,8 +785,12 @@ pub const CircuitEntity = struct {
             try self.setBlock(alloc, block.*);
         }
 
-        for (other.inputs.items) |i| {
+        for (other.internal_inputs.items) |i| {
             try self.setInput(alloc, i);
+        }
+
+        for (other.inputs.items) |i| {
+            try self.setExternalInput(alloc, i.@"0", i.@"1");
         }
 
         for (other.outputs.items) |o| {
@@ -789,7 +807,7 @@ pub const CircuitEntity = struct {
         self_input_idx: usize,
         other_output_idx: usize,
     ) !void {
-        const si = &self.inputs.items[self_input_idx];
+        const si = &self.internal_inputs.items[self_input_idx];
         const oo = &other.outputs.items[other_output_idx];
         while (si.x != oo.x) {
             const mag = @max(si.x, oo.x) - @min(si.x, oo.x);
@@ -809,12 +827,16 @@ pub const CircuitEntity = struct {
             try self.setBlock(alloc, b.*);
         }
 
-        for (other.inputs.items) |in| {
+        for (other.internal_inputs.items) |in| {
             try self.setInput(alloc, .{
                 .x = in.x,
                 .y = in.y,
                 .z = in.z,
             });
+        }
+
+        for (other.inputs.items) |in| {
+            try self.setExternalInput(alloc, in.@"0", in.@"1");
         }
 
         for (0..other.outputs.items.len) |out| {
@@ -824,7 +846,7 @@ pub const CircuitEntity = struct {
         }
 
         var curr = other.outputs.items[other_output_idx];
-        const end = self.inputs.items[self_input_idx];
+        const end = self.internal_inputs.items[self_input_idx];
 
         while (!std.meta.eql(curr, end)) {
             try self.setBlock(alloc, .{
@@ -834,7 +856,7 @@ pub const CircuitEntity = struct {
             curr.z += 1;
         }
 
-        _ = self.inputs.orderedRemove(self_input_idx);
+        _ = self.internal_inputs.orderedRemove(self_input_idx);
     }
 
     /// Checks if a merge would result in any collisions
@@ -905,8 +927,8 @@ pub const CircuitEntity = struct {
     fn translateGate(alloc: std.mem.Allocator, gate: Gate, circuit: Circuit) !CircuitEntity {
         var result: CircuitEntity = undefined;
         switch (gate) {
-            .input => |_| {
-                result = try CircuitEntity.constructInput(alloc);
+            .input => |in| {
+                result = try CircuitEntity.constructInput(alloc, in.name);
             },
             .and_gate => |binary| {
                 const padding_left = circuit.paddingNecessary(binary.left);
@@ -992,6 +1014,10 @@ pub const CircuitEntity = struct {
             defer generated.deinit(alloc);
 
             try result.combine(alloc, &generated);
+        }
+
+        for (result.inputs.items) |point| {
+            std.debug.print("{s} - {any}\n", .{ point.@"1", point.@"0" });
         }
 
         return result;
