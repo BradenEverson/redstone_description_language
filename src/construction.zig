@@ -1005,6 +1005,44 @@ pub const CircuitEntity = struct {
         return result;
     }
 
+    pub fn connectPoints(self: *CircuitEntity, alloc: std.mem.Allocator, from: Point, to: Point) !void {
+        var curr = from;
+        var steps: u32 = 1;
+
+        while (!std.meta.eql(curr, to)) {
+            var dir: Direction = .north;
+
+            if (to.z != curr.z) {
+                // move along z
+                if (to.z > curr.z) {
+                    dir = .north;
+                    curr.z += 1;
+                } else {
+                    dir = .south;
+                    curr.z -= 1;
+                }
+            } else if (to.x != curr.x) {
+                // move along x
+                if (to.x > curr.x) {
+                    dir = .west;
+                    curr.x += 1;
+                } else {
+                    dir = .east;
+                    curr.x -= 1;
+                }
+            }
+
+            const ty = if (steps % 10 == 0) BlockMetadata{ .repeater = .{ .delay = 1, .facing = dir } } else .redstone_wire;
+
+            try self.setBlock(alloc, Block{
+                .ty = ty,
+                .loc = curr,
+            });
+
+            steps += 1;
+        }
+    }
+
     pub fn translateToEntity(alloc: std.mem.Allocator, circuit: Circuit) !CircuitEntity {
         var result: CircuitEntity = .{};
 
