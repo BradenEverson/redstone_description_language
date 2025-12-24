@@ -27,7 +27,6 @@ pub fn main() !void {
     const a = try circuit.input(alloc, "a");
     const b = try circuit.input(alloc, "b");
 
-    // _ = try circuit.output(alloc, try circuit.xorGate(alloc, a, b));
     const cin = try circuit.input(alloc, "cin");
 
     const a_and_b = try circuit.andGate(alloc, a, b);
