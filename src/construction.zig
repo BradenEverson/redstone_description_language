@@ -1054,8 +1054,23 @@ pub const CircuitEntity = struct {
             try result.combine(alloc, &generated);
         }
 
-        for (result.inputs.items) |point| {
-            std.debug.print("{s} - {any}\n", .{ point.@"1", point.@"0" });
+        var input_z = std.StringArrayHashMapUnmanaged(u32){};
+        defer input_z.deinit(alloc);
+
+        try result.shift(alloc, 1, 0, circuit.inputs.size * 4);
+
+        var names = circuit.inputs.keyIterator();
+        var idx: u32 = 0;
+
+        const end = result.width;
+
+        while (names.next()) |name| {
+            const z = idx * 4;
+            try input_z.put(alloc, name.*, z);
+
+            try result.connectPoints(alloc, .{ .x = 0, .y = 0, .z = z }, .{ .x = end, .y = 0, .z = z });
+
+            idx += 1;
         }
 
         return result;
