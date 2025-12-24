@@ -9,11 +9,14 @@ const Gate = dl.Gate;
 const nbt = @import("nbt.zig");
 const NbtNode = @import("nbt/node.zig").NbtNode;
 
+const STEPS_BEFORE_REPEATER: u32 = 5;
+
 pub const BlockType = enum(u32) {
     redstone_wire = 0,
     redstone_torch = 1,
     comparator = 2,
     repeater = 3,
+    white_wool = 4,
 };
 
 pub const Point = struct { x: u32 = 0, y: u32 = 0, z: u32 = 0 };
@@ -23,6 +26,7 @@ pub const BlockMetadata = union(BlockType) {
     redstone_torch,
     comparator: ComparatorMetadata,
     repeater: RepeaterMetadata,
+    white_wool,
 
     pub fn toStr(self: BlockMetadata) []const u8 {
         return switch (self) {
@@ -30,6 +34,7 @@ pub const BlockMetadata = union(BlockType) {
             .redstone_torch => "minecraft:redstone_torch",
             .comparator => "minecraft:comparator",
             .repeater => "minecraft:repeater",
+            .white_wool => "minecraft:white_wool",
         };
     }
 
@@ -908,6 +913,82 @@ pub const CircuitEntity = struct {
         return result;
     }
 
+    pub fn isWool(self: *const CircuitEntity, check: Point) bool {
+        if (self.blocks.get(check)) |p| {
+            return p.ty == .white_wool;
+        } else {
+            return false;
+        }
+    }
+
+    pub fn bridgeAt(self: *CircuitEntity, alloc: std.mem.Allocator, centered: Point) !void {
+        var middle = centered;
+        var before_before = centered;
+        var before = centered;
+        var after = centered;
+        var after_after = centered;
+
+        before.x -|= 1;
+        before_before.x += 2;
+        after.x += 1;
+        after_after.x -|= 2;
+
+        middle.y += 1;
+
+        try self.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = before_before,
+        });
+
+        try self.setBlock(alloc, Block{
+            .ty = .white_wool,
+            .loc = before,
+        });
+
+        try self.setBlock(alloc, Block{
+            .ty = .white_wool,
+            .loc = middle,
+        });
+
+        try self.setBlock(alloc, Block{
+            .ty = .white_wool,
+            .loc = after,
+        });
+
+        before.y += 1;
+        after.y += 1;
+        middle.y += 1;
+
+        try self.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = before,
+        });
+
+        try self.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = middle,
+        });
+
+        try self.setBlock(alloc, Block{
+            .ty = .redstone_wire,
+            .loc = after,
+        });
+
+        if (self.isWool(after_after)) {
+            after_after.y += 1;
+            try self.setBlock(alloc, Block{
+                .ty = .redstone_wire,
+                .loc = after_after,
+            });
+        } else {
+            _ = self.blocks.remove(after_after);
+            try self.setBlock(alloc, Block{
+                .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
+                .loc = after_after,
+            });
+        }
+    }
+
     pub fn connectPoints(self: *CircuitEntity, alloc: std.mem.Allocator, from: Point, to: Point) !void {
         var curr = from;
         var steps: u32 = 1;
@@ -935,7 +1016,24 @@ pub const CircuitEntity = struct {
                 }
             }
 
-            const ty = if (steps % 10 == 0 and !std.meta.eql(curr, to)) BlockMetadata{ .repeater = .{ .delay = 1, .facing = dir } } else .redstone_wire;
+            const ty = if (steps % STEPS_BEFORE_REPEATER == 0 and !std.meta.eql(curr, to)) BlockMetadata{ .repeater = .{ .delay = 1, .facing = dir } } else .redstone_wire;
+
+            if (self.blocks.contains(curr) and !std.meta.eql(curr, to)) {
+                _ = self.blocks.remove(curr);
+
+                _ = self.blocks.remove(Point{
+                    .x = curr.x -| 1,
+                    .y = curr.y,
+                    .z = curr.z,
+                });
+
+                _ = self.blocks.remove(Point{
+                    .x = curr.x + 1,
+                    .y = curr.y,
+                    .z = curr.z,
+                });
+                try self.bridgeAt(alloc, curr);
+            }
 
             try self.setBlock(alloc, Block{
                 .ty = ty,
@@ -974,6 +1072,22 @@ pub const CircuitEntity = struct {
             try result.connectPoints(alloc, .{ .x = end, .y = 0, .z = z }, .{ .x = 0, .y = 0, .z = z });
 
             idx += 1;
+        }
+
+        for (result.inputs.items) |input| {
+            const to = input.@"0";
+            const start = Point{
+                .x = input.@"0".x,
+                .y = input.@"0".y,
+                .z = input_z.get(input.@"1").?,
+            };
+
+            try result.connectPoints(alloc, start, to);
+            _ = result.blocks.remove(start);
+            try result.setBlock(alloc, Block{
+                .ty = .redstone_wire,
+                .loc = start,
+            });
         }
 
         return result;
