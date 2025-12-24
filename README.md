@@ -12,5 +12,6 @@ The process of going from VHDL source to Minecraft Entity is a very involved one
                                [NBT Entity] <= [Minecraft Block Description] <=//
 ```
 
-<img width="1819" height="968" alt="image" src="https://github.com/user-attachments/assets/0dd89604-e05f-4ada-9208-875f59867996" />
-A single bit Full Adder component compiled to a Redstone entity
+## Examples
+### Singl-Bit Full Adder:
+<img width="1819" height="968" alt="FA" src="https://github.com/user-attachments/assets/0dd89604-e05f-4ada-9208-875f59867996" />
