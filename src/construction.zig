@@ -211,27 +211,10 @@ pub const CircuitEntity = struct {
 
         curr_x += 1;
 
-        for (0..padding / 2) |_| {
-            try area.setBlock(alloc, Block{
-                .ty = .redstone_wire,
-                .loc = .{
-                    .x = curr_x,
-                    .y = 0,
-                    .z = 2,
-                },
-            });
+        try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 2 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 2 });
+        try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 1 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 1 });
 
-            try area.setBlock(alloc, Block{
-                .ty = .redstone_wire,
-                .loc = .{
-                    .x = curr_x,
-                    .y = 0,
-                    .z = 1,
-                },
-            });
-
-            curr_x += 1;
-        }
+        curr_x += padding / 2;
 
         try area.setBlock(alloc, Block{
             .ty = .redstone_wire,
@@ -291,27 +274,10 @@ pub const CircuitEntity = struct {
 
         curr_x += 1;
 
-        for (0..padding / 2) |_| {
-            try area.setBlock(alloc, Block{
-                .ty = .redstone_wire,
-                .loc = .{
-                    .x = curr_x,
-                    .y = 0,
-                    .z = 2,
-                },
-            });
+        try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 2 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 2 });
+        try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 1 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 1 });
 
-            try area.setBlock(alloc, Block{
-                .ty = .redstone_wire,
-                .loc = .{
-                    .x = curr_x,
-                    .y = 0,
-                    .z = 1,
-                },
-            });
-
-            curr_x += 1;
-        }
+        curr_x += padding / 2;
 
         try area.setBlock(alloc, Block{
             .ty = .redstone_wire,
@@ -1068,7 +1034,7 @@ pub const CircuitEntity = struct {
             const z = idx * 4;
             try input_z.put(alloc, name.*, z);
 
-            try result.connectPoints(alloc, .{ .x = 0, .y = 0, .z = z }, .{ .x = end, .y = 0, .z = z });
+            try result.connectPoints(alloc, .{ .x = end, .y = 0, .z = z }, .{ .x = 0, .y = 0, .z = z });
 
             idx += 1;
         }
