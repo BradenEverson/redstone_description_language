@@ -17,6 +17,8 @@ pub const BlockType = enum(u32) {
     comparator = 2,
     repeater = 3,
     white_wool = 4,
+    lever = 5,
+    redstone_lamp = 6,
 };
 
 pub const Point = struct { x: u32 = 0, y: u32 = 0, z: u32 = 0 };
@@ -27,6 +29,8 @@ pub const BlockMetadata = union(BlockType) {
     comparator: ComparatorMetadata,
     repeater: RepeaterMetadata,
     white_wool,
+    lever: LeverMetadata,
+    redstone_lamp,
 
     pub fn toStr(self: BlockMetadata) []const u8 {
         return switch (self) {
@@ -35,6 +39,9 @@ pub const BlockMetadata = union(BlockType) {
             .comparator => "minecraft:comparator",
             .repeater => "minecraft:repeater",
             .white_wool => "minecraft:white_wool",
+
+            .lever => "minecraft:lever",
+            .redstone_lamp => "minecraft:redstone_lamp",
         };
     }
 
@@ -70,11 +77,43 @@ pub const BlockMetadata = union(BlockType) {
 
                 try nbt.add(alloc, tag, properties);
             },
+
+            .lever => |l| {
+                const properties = try nbt.compound(alloc, "Properties");
+
+                const face = try nbt.string(alloc, "face", l.face.toStr());
+                try nbt.add(alloc, properties, face);
+
+                const facing = try nbt.string(alloc, "facing", l.facing.toStr());
+                try nbt.add(alloc, properties, facing);
+
+                const poweredStr = if (l.powered) "true" else "false";
+                const mode = try nbt.string(alloc, "powered", poweredStr);
+                try nbt.add(alloc, properties, mode);
+
+                try nbt.add(alloc, tag, properties);
+            },
             else => {},
         }
 
         return tag;
     }
+};
+
+pub const Placement = enum {
+    floor,
+
+    pub fn toStr(self: Placement) []const u8 {
+        return switch (self) {
+            .floor => "floor",
+        };
+    }
+};
+
+pub const LeverMetadata = struct {
+    facing: Direction,
+    face: Placement,
+    powered: bool,
 };
 
 pub const ComparatorMetadata = struct {
@@ -702,7 +741,7 @@ pub const CircuitEntity = struct {
         }
 
         for (other.outputs.items) |o| {
-            try self.setInput(alloc, o);
+            try self.setOutput(alloc, o);
         }
     }
 
@@ -1071,6 +1110,15 @@ pub const CircuitEntity = struct {
 
             try result.connectPoints(alloc, .{ .x = end, .y = 0, .z = z }, .{ .x = 0, .y = 0, .z = z });
 
+            try result.setBlock(alloc, .{
+                .ty = .{ .lever = .{ .face = .floor, .powered = false, .facing = .west } },
+                .loc = .{
+                    .x = end,
+                    .y = 0,
+                    .z = z,
+                },
+            });
+
             idx += 1;
         }
 
@@ -1087,6 +1135,14 @@ pub const CircuitEntity = struct {
             try result.setBlock(alloc, Block{
                 .ty = .redstone_wire,
                 .loc = start,
+            });
+        }
+
+        for (result.outputs.items) |output| {
+            _ = result.blocks.remove(output);
+            try result.setBlock(alloc, Block{
+                .ty = .redstone_lamp,
+                .loc = output,
             });
         }
 
