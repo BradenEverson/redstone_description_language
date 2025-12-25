@@ -318,8 +318,8 @@ pub const CircuitEntity = struct {
 
         curr_x += 1;
 
-        try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 2 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 2 });
-        try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 1 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 1 });
+        try area.connectPoints(alloc, .{ .x = curr_x + padding / 2, .y = 0, .z = 2 }, .{ .x = curr_x, .y = 0, .z = 2 });
+        try area.connectPoints(alloc, .{ .x = curr_x + padding / 2, .y = 0, .z = 1 }, .{ .x = curr_x, .y = 0, .z = 1 });
 
         curr_x += padding / 2;
 
