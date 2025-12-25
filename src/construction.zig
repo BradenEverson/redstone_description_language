@@ -865,11 +865,11 @@ pub const CircuitEntity = struct {
     fn translateGate(alloc: std.mem.Allocator, gid: GateId, circuit: Circuit) !CircuitEntity {
         var result: CircuitEntity = undefined;
         const gate = circuit.gates.items[gid.id];
-        const deps = circuit.depOn(gid);
-
-        if (deps > 1 and gate != .input) {
-            std.debug.print("{} deps on {} [{any}]\n", .{ deps, gid.id, gate });
-        }
+        // const deps = circuit.depOn(gid);
+        //
+        // if (deps > 1 and gate != .input) {
+        //     std.debug.print("{} deps on {} [{any}]\n", .{ deps, gid.id, gate });
+        // }
 
         switch (gate) {
             .input => |in| {
@@ -959,20 +959,17 @@ pub const CircuitEntity = struct {
     }
 
     pub fn bridgeAt(self: *CircuitEntity, alloc: std.mem.Allocator, centered: Point) !void {
-        // TODO: We are bridging in a very dumb way, instead of forming the bridge around us,
-        // as the violator we should have to climb the bridge ourselves
-        // This might remove the issues I'm seeing in the 2-bit rca
-
+        // TODO: keep bridging until safe to unbridge
         var middle = centered;
         var before_before = centered;
         var before = centered;
         var after = centered;
         var after_after = centered;
 
-        before.x -|= 1;
-        before_before.x += 2;
-        after.x += 1;
-        after_after.x -|= 2;
+        before.z -|= 1;
+        before_before.z += 2;
+        after.z += 1;
+        after_after.z -|= 2;
 
         middle.y += 1;
 
@@ -1027,7 +1024,7 @@ pub const CircuitEntity = struct {
         } else {
             _ = self.blocks.remove(after_after);
             try self.setBlock(alloc, Block{
-                .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
+                .ty = .{ .repeater = .{ .delay = 1, .facing = .north } },
                 .loc = after_after,
             });
         }
@@ -1063,15 +1060,14 @@ pub const CircuitEntity = struct {
             const ty = if (steps % STEPS_BEFORE_REPEATER == 0 and !std.meta.eql(curr, to)) BlockMetadata{ .repeater = .{ .delay = 1, .facing = dir } } else .redstone_wire;
 
             if (self.blocks.contains(curr) and !std.meta.eql(curr, to)) {
-                _ = self.blocks.remove(curr);
-
                 try self.bridgeAt(alloc, curr);
+                curr.z += 2;
+            } else {
+                try self.setBlock(alloc, Block{
+                    .ty = ty,
+                    .loc = curr,
+                });
             }
-
-            try self.setBlock(alloc, Block{
-                .ty = ty,
-                .loc = curr,
-            });
 
             steps += 1;
         }
