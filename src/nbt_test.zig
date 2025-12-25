@@ -39,13 +39,13 @@ pub fn main() !void {
 
     const cout = try circuit.orGate(alloc, as, b0_and_cin);
 
-    // const a1_and_cin = try circuit.andGate(alloc, a1, cout);
-    // const b1_and_cin = try circuit.andGate(alloc, b1, cout);
-    // const a1_and_b1 = try circuit.andGate(alloc, a1, b1);
-    //
-    // const a1s = try circuit.orGate(alloc, a1_and_b1, a1_and_cin);
-    //
-    // _ = try circuit.output(alloc, try circuit.orGate(alloc, a1s, b1_and_cin));
+    const a1_and_cin = try circuit.andGate(alloc, a1, cout);
+    const b1_and_cin = try circuit.andGate(alloc, b1, cout);
+    const a1_and_b1 = try circuit.andGate(alloc, a1, b1);
+
+    const a1s = try circuit.orGate(alloc, a1_and_b1, a1_and_cin);
+
+    _ = try circuit.output(alloc, try circuit.orGate(alloc, a1s, b1_and_cin));
 
     const a1_xor_b1 = try circuit.xorGate(alloc, a1, b1);
     _ = try circuit.output(alloc, try circuit.xorGate(alloc, a1_xor_b1, cout));

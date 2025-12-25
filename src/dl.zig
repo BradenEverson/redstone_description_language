@@ -21,6 +21,79 @@ pub const Circuit = struct {
         self.gates.deinit(alloc);
     }
 
+    pub fn depOn(self: *const Circuit, dep_on: GateId) u32 {
+        var result: u32 = 0;
+        for (self.outputs.items) |o| {
+            const out = self.gates.items[o];
+            result += self.depOnRec(dep_on, out);
+        }
+        return result;
+    }
+
+    fn depOnRec(self: *const Circuit, dep_on: GateId, curr: Gate) u32 {
+        var result: u32 = 0;
+        switch (curr) {
+            .input => |_| return 0,
+            .and_gate => |binary| {
+                if (binary.left == dep_on or binary.right == dep_on) {
+                    result += 1;
+                }
+                const left = self.gates.items[binary.left.id];
+                const right = self.gates.items[binary.right.id];
+
+                result += self.depOnRec(dep_on, left) + self.depOnRec(dep_on, right);
+            },
+            .or_gate => |binary| {
+                if (binary.left == dep_on or binary.right == dep_on) {
+                    result += 1;
+                }
+                const left = self.gates.items[binary.left.id];
+                const right = self.gates.items[binary.right.id];
+
+                result += self.depOnRec(dep_on, left) + self.depOnRec(dep_on, right);
+            },
+            .xor_gate => |binary| {
+                if (binary.left == dep_on or binary.right == dep_on) {
+                    result += 1;
+                }
+                const left = self.gates.items[binary.left.id];
+                const right = self.gates.items[binary.right.id];
+
+                result += self.depOnRec(dep_on, left) + self.depOnRec(dep_on, right);
+            },
+            .nor_gate => |binary| {
+                if (binary.left == dep_on or binary.right == dep_on) {
+                    result += 1;
+                }
+                const left = self.gates.items[binary.left.id];
+                const right = self.gates.items[binary.right.id];
+
+                result += self.depOnRec(dep_on, left) + self.depOnRec(dep_on, right);
+            },
+            .nand_gate => |binary| {
+                if (binary.left == dep_on or binary.right == dep_on) {
+                    result += 1;
+                }
+
+                const left = self.gates.items[binary.left.id];
+                const right = self.gates.items[binary.right.id];
+
+                result += self.depOnRec(dep_on, left) + self.depOnRec(dep_on, right);
+            },
+            .not_gate => |unary| {
+                if (unary.val == dep_on) {
+                    result += 1;
+                } else {
+                    const val = self.gates.items[unary.val.id];
+
+                    result += self.depOnRec(dep_on, val);
+                }
+            },
+        }
+
+        return result;
+    }
+
     pub fn paddingNecessary(self: *const Circuit, at: GateId) u32 {
         const gate_at = self.gates.items[at.id];
         return switch (gate_at) {
