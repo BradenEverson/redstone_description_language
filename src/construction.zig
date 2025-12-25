@@ -722,11 +722,7 @@ pub const CircuitEntity = struct {
 
     /// Combines two circuit entities by shifting one to the left
     pub fn combine(self: *CircuitEntity, alloc: std.mem.Allocator, other: *CircuitEntity) !void {
-        while (self.collision(other)) {
-            try self.shift(alloc, 1, 0, 0);
-        }
-
-        try self.shift(alloc, 2, 0, 0);
+        try self.shift(alloc, other.width + 10, 0, 0);
 
         var blocks = other.blocks.valueIterator();
         while (blocks.next()) |block| {
@@ -869,6 +865,11 @@ pub const CircuitEntity = struct {
     fn translateGate(alloc: std.mem.Allocator, gid: GateId, circuit: Circuit) !CircuitEntity {
         var result: CircuitEntity = undefined;
         const gate = circuit.gates.items[gid.id];
+        const deps = circuit.depOn(gid);
+
+        if (deps > 1 and gate != .input) {
+            std.debug.print("{} deps on {} [{any}]\n", .{ deps, gid.id, gate });
+        }
 
         switch (gate) {
             .input => |in| {
@@ -958,6 +959,10 @@ pub const CircuitEntity = struct {
     }
 
     pub fn bridgeAt(self: *CircuitEntity, alloc: std.mem.Allocator, centered: Point) !void {
+        // TODO: We are bridging in a very dumb way, instead of forming the bridge around us,
+        // as the violator we should have to climb the bridge ourselves
+        // This might remove the issues I'm seeing in the 2-bit rca
+
         var middle = centered;
         var before_before = centered;
         var before = centered;
@@ -970,6 +975,9 @@ pub const CircuitEntity = struct {
         after_after.x -|= 2;
 
         middle.y += 1;
+
+        _ = self.blocks.remove(before);
+        _ = self.blocks.remove(after);
 
         try self.setBlock(alloc, Block{
             .ty = .redstone_wire,
@@ -1057,17 +1065,6 @@ pub const CircuitEntity = struct {
             if (self.blocks.contains(curr) and !std.meta.eql(curr, to)) {
                 _ = self.blocks.remove(curr);
 
-                _ = self.blocks.remove(Point{
-                    .x = curr.x -| 1,
-                    .y = curr.y,
-                    .z = curr.z,
-                });
-
-                _ = self.blocks.remove(Point{
-                    .x = curr.x + 1,
-                    .y = curr.y,
-                    .z = curr.z,
-                });
                 try self.bridgeAt(alloc, curr);
             }
 
