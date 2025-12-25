@@ -5,6 +5,7 @@ const std = @import("std");
 const dl = @import("dl.zig");
 const Circuit = dl.Circuit;
 const Gate = dl.Gate;
+const GateId = dl.GateId;
 
 const nbt = @import("nbt.zig");
 const NbtNode = @import("nbt/node.zig").NbtNode;
@@ -865,8 +866,10 @@ pub const CircuitEntity = struct {
         return root;
     }
 
-    fn translateGate(alloc: std.mem.Allocator, gate: Gate, circuit: Circuit) !CircuitEntity {
+    fn translateGate(alloc: std.mem.Allocator, gid: GateId, circuit: Circuit) !CircuitEntity {
         var result: CircuitEntity = undefined;
+        const gate = circuit.gates.items[gid.id];
+
         switch (gate) {
             .input => |in| {
                 result = try CircuitEntity.constructInput(alloc, in.name);
@@ -876,8 +879,8 @@ pub const CircuitEntity = struct {
                 const padding_right = circuit.paddingNecessary(binary.right);
                 var parent = try CircuitEntity.constructAndPadding(alloc, padding_right + padding_left);
 
-                const left = circuit.gates.items[binary.left.id];
-                const right = circuit.gates.items[binary.right.id];
+                const left = binary.left;
+                const right = binary.right;
 
                 var l_child = try CircuitEntity.translateGate(alloc, left, circuit);
                 defer l_child.deinit(alloc);
@@ -896,8 +899,8 @@ pub const CircuitEntity = struct {
 
                 var parent = try CircuitEntity.constructOrN(alloc, 2, padding_left + padding_right);
 
-                const left = circuit.gates.items[binary.left.id];
-                const right = circuit.gates.items[binary.right.id];
+                const left = binary.left;
+                const right = binary.right;
 
                 var l_child = try CircuitEntity.translateGate(alloc, left, circuit);
                 defer l_child.deinit(alloc);
@@ -915,8 +918,8 @@ pub const CircuitEntity = struct {
                 const padding_right = circuit.paddingNecessary(binary.right);
 
                 var parent = try CircuitEntity.constructXorPadding(alloc, padding_left + padding_right);
-                const left = circuit.gates.items[binary.left.id];
-                const right = circuit.gates.items[binary.right.id];
+                const left = binary.left;
+                const right = binary.right;
 
                 var l_child = try CircuitEntity.translateGate(alloc, left, circuit);
                 defer l_child.deinit(alloc);
@@ -931,7 +934,7 @@ pub const CircuitEntity = struct {
             },
             .not_gate => |unary| {
                 var parent = try CircuitEntity.constructNot(alloc);
-                const val = circuit.gates.items[unary.val.id];
+                const val = unary.val;
 
                 var child = try CircuitEntity.translateGate(alloc, val, circuit);
                 defer child.deinit(alloc);
@@ -1081,8 +1084,7 @@ pub const CircuitEntity = struct {
         var result: CircuitEntity = .{};
 
         for (circuit.outputs.items) |output| {
-            const target = circuit.gates.items[output];
-            var generated = try CircuitEntity.translateGate(alloc, target, circuit);
+            var generated = try CircuitEntity.translateGate(alloc, GateId{ .id = output }, circuit);
             defer generated.deinit(alloc);
 
             try result.combine(alloc, &generated);
