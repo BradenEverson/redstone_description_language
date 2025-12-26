@@ -26,6 +26,7 @@ pub const Point = struct {
     x: u32 = 0,
     y: u32 = 0,
     z: u32 = 0,
+
     pub fn forward(self: Point, dir: Direction) Point {
         var p = self;
 
@@ -1092,7 +1093,7 @@ pub const CircuitEntity = struct {
         var input_z = std.StringArrayHashMapUnmanaged(u32){};
         defer input_z.deinit(alloc);
 
-        try result.shift(alloc, 1, 0, circuit.inputs.size * 4);
+        try result.shift(alloc, 1, 0, circuit.inputs.size * 5);
 
         var names = circuit.inputs.keyIterator();
         var idx: u32 = 0;
@@ -1100,7 +1101,8 @@ pub const CircuitEntity = struct {
         const end = result.width;
 
         while (names.next()) |name| {
-            const z = idx * 4;
+            std.debug.print("{s}\n", .{name.*});
+            const z = idx * 5;
             try input_z.put(alloc, name.*, z);
 
             try result.connectPoints(alloc, .{ .x = end, .y = 0, .z = z }, .{ .x = 0, .y = 0, .z = z });

@@ -97,7 +97,7 @@ pub const Circuit = struct {
     pub fn paddingNecessary(self: *const Circuit, at: GateId) u32 {
         const gate_at = self.gates.items[at.id];
         return switch (gate_at) {
-            .input => |_| 0,
+            .input => |_| 2,
             .and_gate => |binary| {
                 const left = self.paddingNecessary(binary.left);
                 const right = self.paddingNecessary(binary.right);

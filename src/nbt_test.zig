@@ -25,20 +25,42 @@ pub fn main() !void {
     defer circuit.deinit(alloc);
 
     const a0 = try circuit.input(alloc, "a0");
+    const a1 = try circuit.input(alloc, "a1");
     const b0 = try circuit.input(alloc, "b0");
-
+    const b1 = try circuit.input(alloc, "b1");
     const cin = try circuit.input(alloc, "cin");
 
-    const a0_and_b0 = try circuit.andGate(alloc, a0, b0);
-    const a0_and_cin = try circuit.andGate(alloc, a0, cin);
-    const b0_and_cin = try circuit.andGate(alloc, b0, cin);
+    const g0 = try circuit.andGate(alloc, a0, b0);
+    const p0 = try circuit.orGate(alloc, a0, b0);
 
-    const as = try circuit.orGate(alloc, a0_and_b0, a0_and_cin);
+    const g1 = try circuit.andGate(alloc, a1, b1);
+    const p1 = try circuit.orGate(alloc, a1, b1);
 
-    _ = try circuit.output(alloc, try circuit.orGate(alloc, as, b0_and_cin));
+    const c1 = try circuit.orGate(alloc, g0, try circuit.andGate(alloc, p0, cin));
 
-    const a_xor_b = try circuit.xorGate(alloc, a0, b0);
-    _ = try circuit.output(alloc, try circuit.xorGate(alloc, a_xor_b, cin));
+    const p1_and_g0 = try circuit.andGate(alloc, p1, g0);
+    const p1_and_p0 = try circuit.andGate(alloc, p1, p0);
+    const p1_and_p0_and_c1 = try circuit.andGate(alloc, p1_and_p0, c1);
+
+    const g1_or_p1_and_g0 = try circuit.orGate(alloc, g1, p1_and_g0);
+
+    _ = try circuit.output(alloc, try circuit.orGate(alloc, g1_or_p1_and_g0, p1_and_p0_and_c1));
+
+    // const a0 = try circuit.input(alloc, "a0");
+    // const b0 = try circuit.input(alloc, "b0");
+    //
+    // const cin = try circuit.input(alloc, "cin");
+    //
+    // const a0_and_b0 = try circuit.andGate(alloc, a0, b0);
+    // const a0_and_cin = try circuit.andGate(alloc, a0, cin);
+    // const b0_and_cin = try circuit.andGate(alloc, b0, cin);
+    //
+    // const as = try circuit.orGate(alloc, a0_and_b0, a0_and_cin);
+    //
+    // _ = try circuit.output(alloc, try circuit.orGate(alloc, as, b0_and_cin));
+    //
+    // const a_xor_b = try circuit.xorGate(alloc, a0, b0);
+    // _ = try circuit.output(alloc, try circuit.xorGate(alloc, a_xor_b, cin));
 
     const area = try CircuitEntity.translateToEntity(a_alloc, circuit);
 
