@@ -110,6 +110,13 @@ pub const Circuit = struct {
 
                 return 4 + left + right;
             },
+            .or_gate_3 => |o3| {
+                const a = self.paddingNecessary(o3.a);
+                const b = self.paddingNecessary(o3.b);
+                const c = self.paddingNecessary(o3.c);
+
+                return 4 + a + b + c;
+            },
             .xor_gate => |binary| {
                 const left = self.paddingNecessary(binary.left);
                 const right = self.paddingNecessary(binary.right);
@@ -156,6 +163,15 @@ pub const Circuit = struct {
 
     pub fn andGate(self: *Circuit, alloc: std.mem.Allocator, a: GateId, b: GateId) !GateId {
         const gate = Gate{ .and_gate = .{ .left = a, .right = b } };
+        const idx = self.gates.items.len;
+
+        try self.gates.append(alloc, gate);
+
+        return .{ .id = idx };
+    }
+
+    pub fn or3Gate(self: *Circuit, alloc: std.mem.Allocator, a: GateId, b: GateId, c: GateId) !GateId {
+        const gate = Gate{ .or_gate_3 = .{ .a = a, .b = b, .c = c } };
         const idx = self.gates.items.len;
 
         try self.gates.append(alloc, gate);
@@ -214,6 +230,7 @@ pub const Circuit = struct {
 
             .and_gate => |a| return self.eval(a.left) and self.eval(a.right),
             .or_gate => |o| return self.eval(o.left) or self.eval(o.right),
+            .or_gate_3 => |o3| return self.eval(o3.a) or self.eval(o3.b) or self.eval(o3.c),
             .xor_gate => |x| return self.eval(x.left) ^ self.eval(x.right),
 
             .nor_gate => |no| return !(self.eval(no.left) or self.eval(no.right)),
@@ -234,6 +251,7 @@ pub const Gate = union(enum) {
 
     and_gate: Binary,
     or_gate: Binary,
+    or_gate_3: struct { a: GateId, b: GateId, c: GateId },
     xor_gate: Binary,
 
     nor_gate: Binary,

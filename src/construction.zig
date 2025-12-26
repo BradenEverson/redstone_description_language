@@ -295,6 +295,16 @@ pub const CircuitEntity = struct {
         try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 2 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 2 });
         try area.connectPoints(alloc, .{ .x = curr_x - 1, .y = 0, .z = 1 }, .{ .x = curr_x + padding / 2, .y = 0, .z = 1 });
 
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .west } },
+            .loc = .{ .x = curr_x + padding / 2 - 1, .y = 0, .z = 2 },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .west } },
+            .loc = .{ .x = curr_x + padding / 2 - 1, .y = 0, .z = 1 },
+        });
+
         curr_x += padding / 2;
 
         try area.setBlock(alloc, Block{
@@ -357,6 +367,16 @@ pub const CircuitEntity = struct {
 
         try area.connectPoints(alloc, .{ .x = curr_x + padding / 2, .y = 0, .z = 2 }, .{ .x = curr_x, .y = 0, .z = 2 });
         try area.connectPoints(alloc, .{ .x = curr_x + padding / 2, .y = 0, .z = 1 }, .{ .x = curr_x, .y = 0, .z = 1 });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
+            .loc = .{ .x = curr_x, .y = 0, .z = 2 },
+        });
+
+        try area.setBlock(alloc, Block{
+            .ty = .{ .repeater = .{ .delay = 1, .facing = .east } },
+            .loc = .{ .x = curr_x, .y = 0, .z = 1 },
+        });
 
         curr_x += padding / 2;
 
@@ -427,7 +447,7 @@ pub const CircuitEntity = struct {
                 },
             });
 
-            try area.connectPoints(alloc, .{ .x = x + gap + 1, .y = 0, .z = 1 }, .{ .x = x, .y = 0, .z = 1 });
+            try area.connectPoints(alloc, .{ .x = x * (gap + 1), .y = 0, .z = 1 }, .{ .x = x, .y = 0, .z = 1 });
             try area.setInput(alloc, .{ .x = x * (gap + 1), .y = 0, .z = 0 });
         }
 
@@ -449,6 +469,7 @@ pub const CircuitEntity = struct {
             },
         });
 
+        try area.connectPoints(alloc, .{ .x = (n - 1) * (gap + 1), .y = 0, .z = 1 }, .{ .x = (n - 2) * (gap + 1), .y = 0, .z = 1 });
         try area.setInput(alloc, .{ .x = (n - 1) * (gap + 1), .y = 0, .z = 0 });
 
         try area.setBlock(alloc, Block{
@@ -798,9 +819,7 @@ pub const CircuitEntity = struct {
             }
         }
 
-        while (self.collision(other)) {
-            try self.shift(alloc, 0, 0, 1);
-        }
+        try self.shift(alloc, 0, 0, other.length);
 
         var blocks = other.blocks.valueIterator();
         while (blocks.next()) |b| {
@@ -828,7 +847,7 @@ pub const CircuitEntity = struct {
         const curr = other.outputs.items[other_output_idx];
         const end = self.internal_inputs.items[self_input_idx];
 
-        try self.connectPoints(alloc, end, curr);
+        try self.connectPoints(alloc, curr.backward(.north), end.backward(.north));
 
         _ = self.internal_inputs.orderedRemove(self_input_idx);
     }
@@ -972,6 +991,31 @@ pub const CircuitEntity = struct {
                 defer child.deinit(alloc);
 
                 try parent.connect(alloc, &child, 0, 0);
+
+                result = parent;
+            },
+            .or_gate_3 => |o3| {
+                const padding_left = circuit.paddingNecessary(o3.a);
+                const padding_middle = circuit.paddingNecessary(o3.b);
+                const padding_right = circuit.paddingNecessary(o3.c);
+
+                var parent = try CircuitEntity.constructOrN(alloc, 3, padding_left + padding_middle + padding_right);
+                const a = o3.a;
+                const b = o3.b;
+                const c = o3.c;
+
+                var a_child = try CircuitEntity.translateGate(alloc, a, circuit);
+                defer a_child.deinit(alloc);
+
+                var b_child = try CircuitEntity.translateGate(alloc, b, circuit);
+                defer b_child.deinit(alloc);
+
+                var c_child = try CircuitEntity.translateGate(alloc, c, circuit);
+                defer c_child.deinit(alloc);
+
+                try parent.connect(alloc, &a_child, 0, 0);
+                try parent.connect(alloc, &b_child, 0, 0);
+                try parent.connect(alloc, &c_child, 0, 0);
 
                 result = parent;
             },

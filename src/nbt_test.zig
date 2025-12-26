@@ -48,6 +48,7 @@ pub fn main() !void {
     //
     // _ = try circuit.output(alloc, try circuit.orGate(alloc, g1_or_p1_and_g0, p1_and_p0_and_c1));
 
+    // 2-bit rca
     const a0 = try circuit.input(alloc, "a0");
     const a1 = try circuit.input(alloc, "a1");
     const b0 = try circuit.input(alloc, "b0");
@@ -62,8 +63,7 @@ pub fn main() !void {
     const a0_xor_b0 = try circuit.xorGate(alloc, a0, b0);
     const s0 = try circuit.xorGate(alloc, a0_xor_b0, cin);
 
-    const a0_generate = try circuit.orGate(alloc, a0_and_b0, a0_and_cin);
-    const c1 = try circuit.orGate(alloc, a0_generate, b0_and_cin);
+    const c1 = try circuit.or3Gate(alloc, a0_and_b0, a0_and_cin, b0_and_cin);
 
     const a1_and_b1 = try circuit.andGate(alloc, a1, b1);
     const a1_and_c1 = try circuit.andGate(alloc, a1, c1);
@@ -72,13 +72,29 @@ pub fn main() !void {
     const a1_xor_b1 = try circuit.xorGate(alloc, a1, b1);
     const s1 = try circuit.xorGate(alloc, a1_xor_b1, c1);
 
-    const a1_generate = try circuit.orGate(alloc, a1_and_b1, a1_and_c1);
-    const cout = try circuit.orGate(alloc, a1_generate, b1_and_c1);
+    const cout = try circuit.or3Gate(alloc, a1_and_b1, a1_and_c1, b1_and_c1);
 
     _ = try circuit.output(alloc, cout);
     _ = try circuit.output(alloc, s1);
     _ = try circuit.output(alloc, s0);
 
+    // 1-bit fa
+    // const a = try circuit.input(alloc, "a");
+    // const b = try circuit.input(alloc, "b");
+    //
+    // const cin = try circuit.input(alloc, "cin");
+    //
+    // const a_and_b = try circuit.andGate(alloc, a, b);
+    // const a_and_cin = try circuit.andGate(alloc, a, cin);
+    // const b_and_cin = try circuit.andGate(alloc, b, cin);
+    //
+    // const a_xor_b = try circuit.xorGate(alloc, a, b);
+    // const s = try circuit.xorGate(alloc, a_xor_b, cin);
+    //
+    // const cout = try circuit.or3Gate(alloc, a_and_b, a_and_cin, b_and_cin);
+    //
+    // _ = try circuit.output(alloc, cout);
+    // _ = try circuit.output(alloc, s);
     const area = try CircuitEntity.translateToEntity(a_alloc, circuit);
 
     var al = std.ArrayList(u8){};
