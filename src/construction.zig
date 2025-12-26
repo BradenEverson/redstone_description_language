@@ -1016,6 +1016,14 @@ pub const CircuitEntity = struct {
                 .loc = next.up(2),
             });
 
+            if (self.blocks.get(next).?.ty == .repeater) {
+                _ = self.blocks.remove(next);
+                try self.setBlock(alloc, Block{
+                    .ty = .redstone_wire,
+                    .loc = next,
+                });
+            }
+
             next = next.forward(direction);
         }
 
