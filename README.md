@@ -17,3 +17,8 @@ The process of going from VHDL source to Minecraft Entity is a very involved one
 <img width="1502" height="993" alt="image" src="https://github.com/user-attachments/assets/cd47e657-f4d5-416d-86c4-9f1d050f82b2" />
 
 
+### 2-bit Ripple Carry Adder:
+https://github.com/user-attachments/assets/a7b261b5-1d88-48c3-b45d-48760e02150d
+
+
+Note: The input and output selectors and lamps were not generated as a part of the NBT structure, but the underlying logic circuit and input grid both were :)
