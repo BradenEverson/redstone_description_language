@@ -991,7 +991,7 @@ pub const CircuitEntity = struct {
 
     /// If there is an obstruction in the current direction, creates a bridge and advances until it is safe
     /// to stop bridging
-    pub fn bridge(self: *CircuitEntity, alloc: std.mem.Allocator, at: Point, direction: Direction) !Point {
+    pub fn bridge(self: *CircuitEntity, alloc: std.mem.Allocator, at: Point, direction: Direction, goal: Point) !Point {
         const curr = at.backward(direction);
         var next = at;
 
@@ -1005,7 +1005,7 @@ pub const CircuitEntity = struct {
             .loc = curr.up(1),
         });
 
-        while (self.blocks.contains(next)) {
+        while (self.blocks.contains(next) and !std.meta.eql(next, goal)) {
             try self.setBlock(alloc, Block{
                 .ty = .white_wool,
                 .loc = next.up(1),
@@ -1068,7 +1068,7 @@ pub const CircuitEntity = struct {
             const ty = if (steps % STEPS_BEFORE_REPEATER == 0 and !std.meta.eql(curr, to)) BlockMetadata{ .repeater = .{ .delay = 1, .facing = dir } } else .redstone_wire;
 
             if (self.blocks.contains(curr) and !std.meta.eql(curr, to)) {
-                curr = try self.bridge(alloc, curr, dir);
+                curr = try self.bridge(alloc, curr, dir, to);
             } else {
                 try self.setBlock(alloc, Block{
                     .ty = ty,
