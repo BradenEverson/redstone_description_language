@@ -22,3 +22,5 @@ https://github.com/user-attachments/assets/a7b261b5-1d88-48c3-b45d-48760e02150d
 
 
 Note: The input and output selectors and lamps were not generated as a part of the NBT structure, but the underlying logic circuit and input grid both were :)
+
+Also, the video quality is abysmal because simulating a giant redstone circuit and recording video on a laptop is apparently a bit too much
