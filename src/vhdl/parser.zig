@@ -7,6 +7,9 @@ pub const Token = tokenizer.Token;
 pub const Keyword = tokenizer.Keyword;
 pub const TokenTag = tokenizer.TokenTag;
 
+pub const dl = @import("../dl.zig");
+pub const Circuit = dl.Circuit;
+
 pub const TopLevel = union(enum) {
     entity: EntityDef,
     arch: Architecture,
@@ -24,6 +27,12 @@ pub const Expr = union(enum) {
     binary: struct { left: *const Expr, op: BinaryOp, right: *const Expr },
     unary: struct { expr: *const Expr, op: UnaryOp },
     input: *const IO,
+
+    pub fn toCircuit(self: Expr, alloc: std.mem.Allocator, circuit: *Circuit) !void {
+        _ = self;
+        _ = alloc;
+        _ = circuit;
+    }
 };
 
 pub const BinaryOp = enum {
