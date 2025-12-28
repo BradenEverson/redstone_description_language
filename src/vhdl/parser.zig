@@ -25,7 +25,7 @@ pub const Architecture = struct {
 
 pub const Assignment = struct {
     output: []const u8,
-    assignment: Expr,
+    assignment: *const Expr,
 };
 
 pub const Expr = union(enum) {
@@ -292,7 +292,7 @@ pub const Parser = struct {
         const tl = try alloc.create(TopLevel);
         errdefer alloc.destroy(tl);
 
-        const arch: Architecture = .{ .name = name, .of = of_entity, .internal_signals = .{}, .mappings = .{} };
+        var arch: Architecture = .{ .name = name, .of = of_entity, .internal_signals = .{}, .mappings = .{} };
 
         // TODO: Before we reach begin there could be internal signal mappings we need to care about
         // maybe this switch could be one of those cool labeled switch loop things
@@ -330,34 +330,75 @@ pub const Parser = struct {
     }
 
     /// An assignment is either a when-else, or just a logical statement
-    pub fn assignment(self: *Parser, alloc: std.mem.Allocator, binds: []const u8) !*const Assignment {
-        const assign = try alloc.create(Assignment);
-        errdefer alloc.destroy(assign);
+    pub fn assignment(self: *Parser, alloc: std.mem.Allocator, binds: []const u8) !Assignment {
+        var assign: Assignment = undefined;
 
-        assign.*.output = binds;
-        assign.*.assignment = try self.parseOr(alloc);
+        assign.output = binds;
+        assign.assignment = try self.parseOrXor(alloc);
 
         return assign;
     }
 
-    pub fn parseOr(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
-        _ = self;
-        _ = alloc;
+    pub fn parseOrXor(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
+        var left = try self.parseAnd(alloc);
+
+        while (self.peekWhole().isKeyword(.logic_or) or self.peekWhole().isKeyword(.logic_xor)) {
+            const op = self.peekWhole().toKeyword().?;
+            self.advance();
+
+            const right = try self.parseAnd(alloc);
+
+            const b_op = switch (op) {
+                .logic_or => BinaryOp.binary_or,
+                .logic_xor => BinaryOp.binary_xor,
+                else => unreachable,
+            };
+
+            const expr = try alloc.create(Expr);
+            expr.* = .{ .binary = .{ .left = left, .op = b_op, .right = right } };
+
+            left = expr;
+        }
+
+        return left;
     }
 
     pub fn parseAnd(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
-        _ = self;
-        _ = alloc;
+        var left = try self.parseNot(alloc);
+
+        while (self.peekWhole().isKeyword(.logic_and)) {
+            self.advance();
+
+            const right = try self.parseNot(alloc);
+
+            const expr = try alloc.create(Expr);
+            expr.* = .{ .binary = .{ .left = left, .op = .binary_and, .right = right } };
+
+            left = expr;
+        }
+
+        return left;
     }
 
     pub fn parseNot(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
-        _ = self;
-        _ = alloc;
+        if (self.peekWhole().isKeyword(.logic_not)) {
+            self.advance();
+
+            const expr = try alloc.create(Expr);
+            const next = try self.parseNot(alloc);
+
+            expr.* = .{ .unary = .{ .expr = next, .op = .not } };
+
+            return expr;
+        } else {
+            return self.parseTerm(alloc);
+        }
     }
 
     pub fn parseTerm(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
         _ = self;
         _ = alloc;
+        return error.UnexpectedEOF;
     }
 };
 
