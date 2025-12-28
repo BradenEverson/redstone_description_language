@@ -301,17 +301,20 @@ pub const Parser = struct {
                 .begin => {
                     self.advance();
                     while (!self.peekWhole().isKeyword(.end)) {
-                        const ident = self.peekWhole();
-                        try self.consume(.ident);
+                        if (self.peekWhole().isKeyword(.with)) {
+                            @panic("TODO: With-Select Syntax");
+                        } else {
+                            const ident = self.peekWhole();
+                            try self.consume(.ident);
 
-                        std.debug.print("{s}\n", .{ident.data});
+                            std.debug.print("{s}\n", .{ident.data});
 
-                        try self.consume(.lt);
-                        try self.consume(.equals);
+                            try self.consume(.lt);
+                            try self.consume(.equals);
 
-                        // This is an assignment
-
-                        self.advance();
+                            const assign = try self.assignment(alloc, ident.data);
+                            try arch.mappings.append(alloc, assign);
+                        }
                     }
                     break :parse;
                 },
@@ -324,6 +327,37 @@ pub const Parser = struct {
 
         tl.* = .{ .arch = arch };
         return tl;
+    }
+
+    /// An assignment is either a when-else, or just a logical statement
+    pub fn assignment(self: *Parser, alloc: std.mem.Allocator, binds: []const u8) !*const Assignment {
+        const assign = try alloc.create(Assignment);
+        errdefer alloc.destroy(assign);
+
+        assign.*.output = binds;
+        assign.*.assignment = try self.parseOr(alloc);
+
+        return assign;
+    }
+
+    pub fn parseOr(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
+        _ = self;
+        _ = alloc;
+    }
+
+    pub fn parseAnd(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
+        _ = self;
+        _ = alloc;
+    }
+
+    pub fn parseNot(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
+        _ = self;
+        _ = alloc;
+    }
+
+    pub fn parseTerm(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
+        _ = self;
+        _ = alloc;
     }
 };
 

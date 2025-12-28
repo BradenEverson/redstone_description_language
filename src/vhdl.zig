@@ -15,6 +15,7 @@ const TopLevel = parse.TopLevel;
 pub const VhdlError = error{
     ArchitectureDefBeforeEntity,
     DuplicateEntityDefinitions,
+    IncompleteEntityArchDuo,
 };
 
 const CompletedEntity = struct {
@@ -72,6 +73,8 @@ pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
             },
         }
     }
+
+    // TODO: Go through each completed entity and generate a circuit for it
 
     return circuit;
 }
