@@ -139,16 +139,22 @@ pub const Circuit = struct {
     }
 
     pub fn input(self: *Circuit, alloc: std.mem.Allocator, name: []const u8) !GateId {
+        if (self.inputs.get(name)) |g| return g.gate;
+
         const in = try alloc.create(Input);
+        errdefer alloc.destroy(in);
+
+        const idx = self.gates.items.len;
+
         in.* = Input{
             .name = name,
             .val = false,
+            .gate = GateId{ .id = idx },
         };
 
         try self.inputs.put(alloc, name, in);
 
         const gate = Gate{ .input = in };
-        const idx = self.gates.items.len;
 
         try self.gates.append(alloc, gate);
 
@@ -244,6 +250,7 @@ pub const Circuit = struct {
 pub const Input = struct {
     name: []const u8,
     val: bool,
+    gate: GateId,
 };
 
 pub const Gate = union(enum) {

@@ -16,6 +16,7 @@ pub const VhdlError = error{
     ArchitectureDefBeforeEntity,
     DuplicateEntityDefinitions,
     IncompleteEntityArchDuo,
+    NoEntity,
 };
 
 const CompletedEntity = struct {
@@ -24,7 +25,8 @@ const CompletedEntity = struct {
 };
 
 pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
-    const circuit = Circuit{};
+    var circuit = Circuit{};
+    errdefer circuit.deinit(alloc);
 
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
@@ -75,6 +77,23 @@ pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
     }
 
     // TODO: Go through each completed entity and generate a circuit for it
+    var entities = full_entities.valueIterator();
+    if (entities.next()) |entity| {
+        const en = entity.entity orelse return error.IncompleteEntityArchDuo;
+        const arch = entity.arch orelse return error.IncompleteEntityArchDuo;
+
+        std.debug.print("{s} - {s}\n", .{ en.name, arch.name });
+
+        for (en.inputs.items) |in| {
+            if (in.ty == .single) {
+                _ = try circuit.input(alloc, in.name);
+            } else {
+                @panic("TODO: create a vector of inputs");
+            }
+        }
+    } else {
+        return error.NoEntity;
+    }
 
     return circuit;
 }

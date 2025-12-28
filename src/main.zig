@@ -32,7 +32,7 @@ pub fn main() void {
 
         std.debug.print("Parsing VHDL\n", .{});
 
-        const circuit = vhdl.parseToCircuit(alloc, data) catch |e| {
+        var circuit = vhdl.parseToCircuit(alloc, data) catch |e| {
             std.debug.print("{any}\n", .{e});
             switch (e) {
                 error.ArchitectureDefBeforeEntity => std.debug.print("Architecture statement before entity description, please define an entity before it's architecture\n", .{}),
@@ -41,10 +41,12 @@ pub fn main() void {
             }
             std.process.exit(1);
         };
+        defer circuit.deinit(alloc);
 
         std.debug.print("Generating Circuit Entity\n", .{});
 
-        const entity = construction.CircuitEntity.translateToEntity(alloc, circuit) catch @panic("Failed to translate");
+        var entity = construction.CircuitEntity.translateToEntity(alloc, circuit) catch @panic("Failed to translate");
+        defer entity.deinit(alloc);
 
         std.debug.print("Serializing to NBT Structure Format\n", .{});
 
