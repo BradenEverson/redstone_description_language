@@ -31,7 +31,7 @@ pub const Assignment = struct {
 pub const Expr = union(enum) {
     binary: struct { left: *const Expr, op: BinaryOp, right: *const Expr },
     unary: struct { expr: *const Expr, op: UnaryOp },
-    input: *const IO,
+    input: []const u8,
 
     pub fn toCircuit(self: Expr, alloc: std.mem.Allocator, circuit: *Circuit) !void {
         _ = self;
@@ -74,6 +74,8 @@ pub const ParserError = error{
     OutOfTokens,
     MismatchedEntityName,
 };
+
+const ParsingErrors = ParserError || std.mem.Allocator.Error;
 
 pub const Parser = struct {
     tokens: []const Token,
@@ -307,8 +309,6 @@ pub const Parser = struct {
                             const ident = self.peekWhole();
                             try self.consume(.ident);
 
-                            std.debug.print("{s}\n", .{ident.data});
-
                             try self.consume(.lt);
                             try self.consume(.equals);
 
@@ -336,10 +336,12 @@ pub const Parser = struct {
         assign.output = binds;
         assign.assignment = try self.parseOrXor(alloc);
 
+        try self.consume(.semicolon);
+
         return assign;
     }
 
-    pub fn parseOrXor(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
+    pub fn parseOrXor(self: *Parser, alloc: std.mem.Allocator) ParsingErrors!*const Expr {
         var left = try self.parseAnd(alloc);
 
         while (self.peekWhole().isKeyword(.logic_or) or self.peekWhole().isKeyword(.logic_xor)) {
@@ -363,7 +365,7 @@ pub const Parser = struct {
         return left;
     }
 
-    pub fn parseAnd(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
+    pub fn parseAnd(self: *Parser, alloc: std.mem.Allocator) ParsingErrors!*const Expr {
         var left = try self.parseNot(alloc);
 
         while (self.peekWhole().isKeyword(.logic_and)) {
@@ -380,7 +382,7 @@ pub const Parser = struct {
         return left;
     }
 
-    pub fn parseNot(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
+    pub fn parseNot(self: *Parser, alloc: std.mem.Allocator) ParsingErrors!*const Expr {
         if (self.peekWhole().isKeyword(.logic_not)) {
             self.advance();
 
@@ -395,10 +397,29 @@ pub const Parser = struct {
         }
     }
 
-    pub fn parseTerm(self: *Parser, alloc: std.mem.Allocator) !*const Expr {
-        _ = self;
-        _ = alloc;
-        return error.UnexpectedEOF;
+    pub fn parseTerm(self: *Parser, alloc: std.mem.Allocator) ParsingErrors!*const Expr {
+        switch (self.peek()) {
+            .ident => {
+                const expr = try alloc.create(Expr);
+
+                expr.* = .{ .input = self.peekWhole().data };
+                self.advance();
+
+                return expr;
+            },
+
+            .open_paren => {
+                self.advance();
+
+                const expr = try self.parseOrXor(alloc);
+                errdefer alloc.destroy(expr);
+
+                try self.consume(.close_paren);
+                return expr;
+            },
+
+            else => return error.UnexpectedToken,
+        }
     }
 };
 
@@ -475,4 +496,19 @@ test "parse architecture" {
     defer al.deinit(a_alloc);
 
     try parser.parse(a_alloc, &al);
+
+    const arch = al.items[0].arch;
+
+    try std.testing.expectEqualStrings("LOGIC", arch.name);
+    try std.testing.expectEqualStrings("IDENT", arch.of);
+
+    try std.testing.expectEqual(0, arch.internal_signals.items.len);
+    try std.testing.expectEqual(1, arch.mappings.items.len);
+
+    const mapping = arch.mappings.items[0];
+
+    try std.testing.expectEqualStrings("bar", mapping.output);
+
+    try std.testing.expectEqual(.not, mapping.assignment.unary.op);
+    try std.testing.expectEqualStrings("foo", mapping.assignment.unary.expr.input);
 }
