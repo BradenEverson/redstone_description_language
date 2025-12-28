@@ -33,6 +33,7 @@ pub fn main() void {
         std.debug.print("Parsing VHDL\n", .{});
 
         const circuit = vhdl.parseToCircuit(alloc, data) catch |e| {
+            std.debug.print("{any}\n", .{e});
             switch (e) {
                 error.ArchitectureDefBeforeEntity => std.debug.print("Architecture statement before entity description, please define an entity before it's architecture\n", .{}),
                 error.DuplicateEntityDefinitions => std.debug.print("Multiple definitions of the same entity, please only define an entity once\n", .{}),
@@ -50,13 +51,16 @@ pub fn main() void {
         const nbt_ir = entity.toNbt(nbt_arena) catch @panic("Failed to create NBT IR");
 
         var bytes = std.ArrayList(u8){};
+        defer bytes.deinit(alloc);
 
         nbt_ir.toBytes(alloc, &bytes, true, true) catch @panic("Failed to translate to bytes");
 
-        const buf = alloc.alloc(u8, file_path.len) catch @panic("Failed to alloc like 5 bytes come on man");
+        const idx = std.mem.lastIndexOf(u8, file_path, "/");
+        const name = if (idx) |i| file_path[i + 1 ..] else file_path;
+        const buf = alloc.alloc(u8, name.len) catch @panic("Failed to alloc like 5 bytes come on man");
         defer alloc.free(buf);
 
-        @memcpy(buf, file_path);
+        @memcpy(buf, name);
 
         buf[buf.len - 3] = 'n';
         buf[buf.len - 2] = 'b';

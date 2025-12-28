@@ -185,11 +185,13 @@ pub fn tokenize(stream: []const u8, tokens: *std.ArrayList(Token), alloc: std.me
                 line += 1;
                 col = 1;
             },
-            '\r' => {
+            '-' => {
                 idx += 1;
-                if (idx < stream.len and stream[idx] == '\n') {
-                    idx += 1;
+                if (idx < stream.len and stream[idx] == '-') {
+                    while (idx < stream.len and stream[idx] != '\n') idx += 1;
                 }
+
+                idx += 1;
                 line += 1;
                 col = 1;
             },

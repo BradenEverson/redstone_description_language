@@ -49,11 +49,11 @@ pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
     for (al.items) |tl| {
         switch (tl.*) {
             .arch => |arch| {
-                if (full_entities.get(arch.name)) |entity| {
+                if (full_entities.get(arch.of)) |entity| {
                     var en = entity;
                     en.arch = arch;
 
-                    try full_entities.put(alloc, arch.name, en);
+                    try full_entities.put(alloc, arch.of, en);
                 } else {
                     return error.ArchitectureDefBeforeEntity;
                 }
