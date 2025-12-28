@@ -25,7 +25,7 @@ pub fn main() !void {
     defer circuit.deinit(alloc);
 
     // Carry Lookahead Circuit
-    //
+
     // const a0 = try circuit.input(alloc, "a0");
     // const a1 = try circuit.input(alloc, "a1");
     // const b0 = try circuit.input(alloc, "b0");
@@ -79,22 +79,40 @@ pub fn main() !void {
     // _ = try circuit.output(alloc, s0);
 
     // 1-bit fa
+    // const a = try circuit.input(alloc, "a");
+    // const b = try circuit.input(alloc, "b");
+    //
+    // const cin = try circuit.input(alloc, "cin");
+    //
+    // const a_and_b = try circuit.andGate(alloc, a, b);
+    // const a_and_cin = try circuit.andGate(alloc, a, cin);
+    // const b_and_cin = try circuit.andGate(alloc, b, cin);
+    //
+    // const a_xor_b = try circuit.xorGate(alloc, a, b);
+    // const s = try circuit.xorGate(alloc, a_xor_b, cin);
+    //
+    // const cout = try circuit.or3Gate(alloc, a_and_b, a_and_cin, b_and_cin);
+    //
+    // _ = try circuit.output(alloc, cout);
+    // _ = try circuit.output(alloc, s);
+
     const a = try circuit.input(alloc, "a");
     const b = try circuit.input(alloc, "b");
+    const c = try circuit.input(alloc, "c");
+    const d = try circuit.input(alloc, "d");
+    const submit = try circuit.input(alloc, "en");
 
-    const cin = try circuit.input(alloc, "cin");
+    const not_a = try circuit.notGate(alloc, a);
+    const not_d = try circuit.notGate(alloc, d);
 
-    const a_and_b = try circuit.andGate(alloc, a, b);
-    const a_and_cin = try circuit.andGate(alloc, a, cin);
-    const b_and_cin = try circuit.andGate(alloc, b, cin);
+    const not_a_and_d = try circuit.andGate(alloc, not_a, b);
+    const c_and_not_d = try circuit.andGate(alloc, c, not_d);
 
-    const a_xor_b = try circuit.xorGate(alloc, a, b);
-    const s = try circuit.xorGate(alloc, a_xor_b, cin);
+    const password = try circuit.andGate(alloc, not_a_and_d, c_and_not_d);
+    const en_pwrd = try circuit.andGate(alloc, password, submit);
 
-    const cout = try circuit.or3Gate(alloc, a_and_b, a_and_cin, b_and_cin);
+    _ = try circuit.output(alloc, en_pwrd);
 
-    _ = try circuit.output(alloc, cout);
-    _ = try circuit.output(alloc, s);
     const area = try CircuitEntity.translateToEntity(a_alloc, circuit);
 
     var al = std.ArrayList(u8){};

@@ -12,6 +12,16 @@ const parse = @import("vhdl/parser.zig");
 const Parser = parse.Parser;
 const TopLevel = parse.TopLevel;
 
+pub const VhdlError = error{
+    ArchitectureDefBeforeEntity,
+    DuplicateEntityDefinitions,
+};
+
+const CompletedEntity = struct {
+    entity: ?parse.EntityDef,
+    arch: ?parse.Architecture,
+};
+
 pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
     const circuit = Circuit{};
 
@@ -31,6 +41,37 @@ pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
     defer al.deinit(a_alloc);
 
     try parser.parse(a_alloc, &al);
+
+    var full_entities = std.StringHashMapUnmanaged(CompletedEntity){};
+    defer full_entities.deinit(alloc);
+
+    for (al.items) |tl| {
+        switch (tl.*) {
+            .arch => |arch| {
+                if (full_entities.get(arch.name)) |entity| {
+                    var en = entity;
+                    en.arch = arch;
+
+                    try full_entities.put(alloc, arch.name, en);
+                } else {
+                    return error.ArchitectureDefBeforeEntity;
+                }
+            },
+
+            .entity => |entity| {
+                if (full_entities.contains(entity.name)) {
+                    return error.DuplicateEntityDefinitions;
+                }
+
+                const en = CompletedEntity{
+                    .entity = entity,
+                    .arch = null,
+                };
+
+                try full_entities.put(alloc, entity.name, en);
+            },
+        }
+    }
 
     return circuit;
 }

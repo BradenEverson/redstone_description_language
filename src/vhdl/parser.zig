@@ -19,8 +19,13 @@ pub const Architecture = struct {
     name: []const u8,
     of: []const u8,
 
-    internal_signals: std.ArrayList(IO),
-    mappings: []Expr,
+    internal_signals: std.ArrayList(IO) = .{},
+    mappings: std.ArrayList(Assignment) = .{},
+};
+
+pub const Assignment = struct {
+    output: []const u8,
+    assignment: Expr,
 };
 
 pub const Expr = union(enum) {
@@ -287,17 +292,28 @@ pub const Parser = struct {
         const tl = try alloc.create(TopLevel);
         errdefer alloc.destroy(tl);
 
-        const arch: Architecture = .{ .name = name, .of = of_entity, .internal_signals = .{}, .mappings = undefined };
+        const arch: Architecture = .{ .name = name, .of = of_entity, .internal_signals = .{}, .mappings = .{} };
 
         // TODO: Before we reach begin there could be internal signal mappings we need to care about
         // maybe this switch could be one of those cool labeled switch loop things
-        switch (self.peek()) {
+        parse: switch (self.peek()) {
             .keyword => switch (self.peekWhole().toKeyword().?) {
                 .begin => {
                     self.advance();
                     while (!self.peekWhole().isKeyword(.end)) {
+                        const ident = self.peekWhole();
+                        try self.consume(.ident);
+
+                        std.debug.print("{s}\n", .{ident.data});
+
+                        try self.consume(.lt);
+                        try self.consume(.equals);
+
+                        // This is an assignment
+
                         self.advance();
                     }
+                    break :parse;
                 },
                 else => return ParserError.UnexpectedKeyword,
             },

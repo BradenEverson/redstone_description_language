@@ -22,6 +22,7 @@ pub fn main() void {
     _ = args.skip();
 
     if (args.next()) |file_path| {
+        std.debug.print("Opening `{s}`\n", .{file_path});
         const data = std.fs.cwd().readFileAlloc(alloc, file_path, 65536) catch {
             std.debug.print("Error: File does not exist!\n", .{});
             std.process.exit(1);
@@ -29,20 +30,39 @@ pub fn main() void {
 
         defer alloc.free(data);
 
+        std.debug.print("Parsing VHDL\n", .{});
+
         const circuit = vhdl.parseToCircuit(alloc, data) catch {
             std.debug.print("Failed to Parse VHDL file\n", .{});
             std.process.exit(1);
         };
 
+        std.debug.print("Generating Circuit Entity\n", .{});
+
         const entity = construction.CircuitEntity.translateToEntity(alloc, circuit) catch @panic("Failed to translate");
+
+        std.debug.print("Serializing to NBT Structure Format\n", .{});
+
         const nbt_ir = entity.toNbt(nbt_arena) catch @panic("Failed to create NBT IR");
 
         var bytes = std.ArrayList(u8){};
 
         nbt_ir.toBytes(alloc, &bytes, true, true) catch @panic("Failed to translate to bytes");
-        nbt.zipNbt("out.nbt", bytes.items) catch @panic("Failed to zip to NBT");
+
+        const buf = alloc.alloc(u8, file_path.len) catch @panic("Failed to alloc like 5 bytes come on man");
+        defer alloc.free(buf);
+
+        @memcpy(buf, file_path);
+
+        buf[buf.len - 3] = 'n';
+        buf[buf.len - 2] = 'b';
+        buf[buf.len - 1] = 't';
+
+        std.debug.print("Saving circuit entity to `{s}`\n", .{buf});
+
+        nbt.zipNbt(buf, bytes.items) catch @panic("Failed to zip to NBT");
     } else {
-        std.debug.print("Missing Input file!!!\nUsage: ./redstone 'file.vhd' or whatever\n", .{});
+        std.debug.print("Missing Input file!!!\nUsage: ./rhdl 'file.vhd' or whatever\n", .{});
     }
 }
 
