@@ -139,7 +139,9 @@ pub const Circuit = struct {
     }
 
     pub fn input(self: *Circuit, alloc: std.mem.Allocator, name: []const u8) !GateId {
-        if (self.inputs.get(name)) |g| return g.gate;
+        if (self.inputs.get(name)) |g| {
+            return g.gate;
+        }
 
         const in = try alloc.create(Input);
         errdefer alloc.destroy(in);

@@ -33,10 +33,59 @@ pub const Expr = union(enum) {
     unary: struct { expr: *const Expr, op: UnaryOp },
     input: []const u8,
 
-    pub fn toCircuit(self: Expr, alloc: std.mem.Allocator, circuit: *Circuit) !void {
-        _ = self;
-        _ = alloc;
-        _ = circuit;
+    pub fn print(self: *const Expr, tabs: u8) void {
+        switch (self.*) {
+            .input => |in| {
+                for (0..tabs) |_| {
+                    std.debug.print("\t", .{});
+                }
+                std.debug.print("input: {s}\n", .{in});
+            },
+
+            .binary => |b| {
+                for (0..tabs) |_| {
+                    std.debug.print("\t", .{});
+                }
+                std.debug.print("BINARY {any}\n", .{b.op});
+                print(b.left, tabs + 1);
+                print(b.right, tabs + 1);
+            },
+
+            .unary => |u| {
+                for (0..tabs) |_| {
+                    std.debug.print("\t", .{});
+                }
+                std.debug.print("UNARY {any}\n", .{u.op});
+                print(u.expr, tabs + 1);
+            },
+        }
+    }
+
+    pub fn toCircuit(self: Expr, alloc: std.mem.Allocator, circuit: *Circuit) !dl.GateId {
+        switch (self) {
+            .input => |in| {
+                return try circuit.input(alloc, in);
+            },
+
+            .binary => |b| {
+                const left = try b.left.toCircuit(alloc, circuit);
+                const right = try b.right.toCircuit(alloc, circuit);
+
+                return switch (b.op) {
+                    .binary_and => try circuit.andGate(alloc, left, right),
+                    .binary_or => try circuit.orGate(alloc, left, right),
+                    .binary_xor => try circuit.xorGate(alloc, left, right),
+                };
+            },
+
+            .unary => |u| {
+                const expr = try u.expr.toCircuit(alloc, circuit);
+
+                return switch (u.op) {
+                    .not => try circuit.notGate(alloc, expr),
+                };
+            },
+        }
     }
 };
 

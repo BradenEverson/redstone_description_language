@@ -82,14 +82,19 @@ pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
         const en = entity.entity orelse return error.IncompleteEntityArchDuo;
         const arch = entity.arch orelse return error.IncompleteEntityArchDuo;
 
-        std.debug.print("{s} - {s}\n", .{ en.name, arch.name });
-
         for (en.inputs.items) |in| {
             if (in.ty == .single) {
                 _ = try circuit.input(alloc, in.name);
             } else {
                 @panic("TODO: create a vector of inputs");
             }
+        }
+
+        for (arch.mappings.items) |mapping| {
+            mapping.assignment.print(0);
+
+            const out = try mapping.assignment.toCircuit(alloc, &circuit);
+            _ = try circuit.output(alloc, out);
         }
     } else {
         return error.NoEntity;
