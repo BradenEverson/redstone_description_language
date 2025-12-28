@@ -285,8 +285,19 @@ pub const Parser = struct {
         };
 
         while (self.peek() != .close_paren) {
-            const mapping_name = self.peekWhole().data;
-            try self.consume(.ident);
+            var mapping_names = std.ArrayList([]const u8){};
+            defer mapping_names.deinit(alloc);
+
+            while (self.peek() != .colon) {
+                const mapping_name = self.peekWhole().data;
+                try mapping_names.append(alloc, mapping_name);
+                try self.consume(.ident);
+
+                if (self.peek() == .comma) {
+                    self.advance();
+                }
+            }
+
             try self.consume(.colon);
 
             const al = if (self.peekWhole().toKeyword()) |kw| switch (kw) {
@@ -299,11 +310,12 @@ pub const Parser = struct {
 
             self.advance();
 
-            var port = IO{ .name = mapping_name, .ty = .single };
-
             const ty = self.peekWhole().toKeyword().?;
-            switch (ty) {
-                .std_logic => self.advance(),
+            const dt: StdLogic = val: switch (ty) {
+                .std_logic => {
+                    self.advance();
+                    break :val .single;
+                },
                 .std_logic_vector => {
                     self.advance();
                     try self.consume(.open_paren);
@@ -320,12 +332,15 @@ pub const Parser = struct {
 
                     try self.consume(.close_paren);
 
-                    port.ty = .{ .vector = top_n - bot_n };
+                    break :val .{ .vector = top_n - bot_n };
                 },
                 else => return ParserError.UnexpectedKeyword,
-            }
+            };
 
-            try al.append(alloc, port);
+            for (mapping_names.items) |mapping_name| {
+                const port = IO{ .name = mapping_name, .ty = dt };
+                try al.append(alloc, port);
+            }
 
             // check for ; or ); consume ; if just
             const end = self.peek();

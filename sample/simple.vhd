@@ -4,9 +4,7 @@
 
 entity FIVE_DETECTOR is
     port(
-        A2: in std_logic;
-        A1: in std_logic;
-        A0: in std_logic;
+        A2, A1, A0: in std_logic;
         Y:  out std_logic);
 end entity FIVE_DETECTOR;
 

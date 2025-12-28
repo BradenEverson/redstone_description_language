@@ -91,8 +91,6 @@ pub fn parseToCircuit(alloc: std.mem.Allocator, data: []const u8) !Circuit {
         }
 
         for (arch.mappings.items) |mapping| {
-            mapping.assignment.print(0);
-
             const out = try mapping.assignment.toCircuit(alloc, &circuit);
             _ = try circuit.output(alloc, out);
         }

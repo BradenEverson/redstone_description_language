@@ -1153,7 +1153,8 @@ pub const CircuitEntity = struct {
         const end = result.width;
 
         while (names.next()) |name| {
-            std.debug.print("{s}\n", .{name.*});
+            // std.debug.print("{s}\n", .{name.*});
+
             const z = idx * 5;
             try input_z.put(alloc, name.*, z);
 
