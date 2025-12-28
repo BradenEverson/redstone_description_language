@@ -16,6 +16,8 @@ The process of going from VHDL source to Minecraft Entity is a very involved one
 ### Single-Bit Full Adder:
 <img width="1502" height="993" alt="image" src="https://github.com/user-attachments/assets/cd47e657-f4d5-416d-86c4-9f1d050f82b2" />
 
+### 3-bit decimal 5 Detector:
+<img width="1609" height="1037" alt="image" src="https://github.com/user-attachments/assets/1e083739-8aac-48bc-b92a-c20576cc7e1e" />
 
 ### 2-bit Ripple Carry Adder:
 https://github.com/user-attachments/assets/a7b261b5-1d88-48c3-b45d-48760e02150d
