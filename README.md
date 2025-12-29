@@ -30,7 +30,11 @@ Awesome, now you have an NBT file representing your digital logic circuit! The n
 Once you are in your `.minecraft` data folder, navigate to saves and then the folder named after the world you want to use the circuit in. In this folder, we are going to have to create some directories for our new structure. At the root of your save folder, create the nested directories `generated/minecraft/structures`. This is the folder path that Minecraft will look at when you try spawning in our circuit structures. Simply drop your generated `.nbt` file in here and we can move on!
 
 ### Loading the Circuit in Minecraft
-Now that our file is generated and loaded in an appropriate spot, all that's left is using it in the game! Simply start up the World you placed the NBT file into, and give yourself a structure block. This can be done with the command `/give @s minecraft:structure_block`.
+Now that our file is generated and loaded in an appropriate spot, all that's left is using it in the game! Simply start up the World you placed the NBT file into, and give yourself a structure block. This can be done with the command 
+
+```
+/give @s minecraft:structure_block
+```
 
 This block is used to load structure entities from that nested folder we created. placing and right clicking this block will bring us into a control page for loading and controlling our structure. This page has several different modes for loading and saving entities, so click the button on the bottom left until it says `Load` and looks like the page pictured below:
 
