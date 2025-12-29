@@ -71,6 +71,30 @@ pub fn main() void {
         std.debug.print("Saving circuit entity to `{s}`\n", .{buf});
 
         nbt.zipNbt(buf, bytes.items) catch @panic("Failed to zip to NBT");
+
+        std.debug.print("Compressing {s} with gzip...\n", .{buf});
+
+        var child = std.process.Child.init(&[_][]const u8{ "gzip", "-f", buf }, alloc);
+
+        const term = child.spawnAndWait() catch |err| {
+            std.debug.print("Failed to spawn gzip: {any}\n", .{err});
+            std.process.exit(1);
+        };
+
+        if (term != .Exited or term.Exited != 0) {
+            std.debug.print("gzip process failed\n", .{});
+            std.process.exit(1);
+        }
+
+        const gz_name = std.fmt.allocPrint(alloc, "{s}.gz", .{buf}) catch @panic("Failed to alloc print");
+        defer alloc.free(gz_name);
+
+        std.fs.cwd().rename(gz_name, buf) catch |err| {
+            std.debug.print("Failed to rename gzipped file: {any}\n", .{err});
+            std.process.exit(1);
+        };
+
+        std.debug.print("Successfully compressed and renamed to {s}\n", .{buf});
     } else {
         std.debug.print("Missing Input file!!!\nUsage: ./rhdl 'file.vhd' or whatever\n", .{});
     }
