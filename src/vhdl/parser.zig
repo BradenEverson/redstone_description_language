@@ -64,7 +64,11 @@ pub const Expr = union(enum) {
     pub fn toCircuit(self: Expr, alloc: std.mem.Allocator, circuit: *Circuit) !dl.GateId {
         switch (self) {
             .input => |in| {
-                return try circuit.input(alloc, in);
+                if (circuit.inputs.contains(in)) {
+                    return try circuit.input(alloc, in);
+                } else {
+                    return error.UndefinedInput;
+                }
             },
 
             .binary => |b| {
@@ -122,6 +126,7 @@ pub const ParserError = error{
     ExpectedSemicolon,
     OutOfTokens,
     MismatchedEntityName,
+    UndefinedInput,
 };
 
 const ParsingErrors = ParserError || std.mem.Allocator.Error;

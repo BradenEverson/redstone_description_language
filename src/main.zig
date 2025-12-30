@@ -33,11 +33,13 @@ pub fn main() void {
         std.debug.print("Parsing VHDL\n", .{});
 
         var circuit = vhdl.parseToCircuit(alloc, data) catch |e| {
-            std.debug.print("{any}\n", .{e});
             switch (e) {
                 error.ArchitectureDefBeforeEntity => std.debug.print("Architecture statement before entity description, please define an entity before it's architecture\n", .{}),
                 error.DuplicateEntityDefinitions => std.debug.print("Multiple definitions of the same entity, please only define an entity once\n", .{}),
-                else => std.debug.print("Failed to Parse VHDL file\n", .{}),
+
+                error.UndefinedInput => std.debug.print("Input name used that wasn't defined in the `Entity` description\n", .{}),
+
+                else => std.debug.print("Failed to Parse VHDL file: {any}\n", .{e}),
             }
             std.process.exit(1);
         };
